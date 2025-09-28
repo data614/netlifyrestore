@@ -26,9 +26,9 @@ TIINGO_ACCESS_KEY=your_api_key_here
 TIINGO_AUTH_TOKEN=your_api_key_here
 ```
 
-Add your API key to the `.env` file:
+Add your API key to the `.env` file (replace `your_real_key` with your actual secret value):
 ```bash
-TIINGO_KEY=aab69a760ed80b5c6c84a5a6f5e76423b3828b90
+TIINGO_KEY=your_real_key
 ```
 
 ## Implementation Options
