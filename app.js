@@ -646,6 +646,80 @@ function updateApiBadge(meta = {}) {
   }
 }
 
+function updateQuoteMeta(meta = {}, warning = '') {
+  const badge = $('priceSourceBadge');
+  const detail = $('priceSourceDetail');
+  if (!badge) return;
+
+  const source = String(meta?.source || '').toLowerCase();
+  const reason = String(meta?.reason || '').toLowerCase();
+  const tokenPreview = meta?.tokenPreview || '';
+  let label = 'Awaiting Tiingo data';
+  let className = 'chip chip-warning';
+
+  if (source === 'live') {
+    label = 'Live Tiingo quote';
+    className = 'chip chip-live';
+  } else if (source === 'eod-fallback') {
+    label = 'Tiingo EOD fallback';
+  } else if (source === 'mock') {
+    label = 'Sample data (offline mode)';
+  } else if (source) {
+    label = `Source: ${meta.source}`;
+  } else if (reason === 'missing_token') {
+    label = 'Tiingo token missing';
+  } else if (reason === 'exception') {
+    label = 'Tiingo data unavailable';
+  }
+
+  if (meta?.chosenKey) {
+    badge.title = `Using ${meta.chosenKey}`;
+  } else if (tokenPreview) {
+    badge.title = `Tiingo token ${tokenPreview}`;
+  } else if (source === 'live') {
+    badge.title = 'Live Tiingo market data';
+  } else {
+    badge.title = 'Tiingo data status';
+  }
+
+  badge.className = className;
+  badge.textContent = label;
+
+  if (!detail) return;
+
+  let message = warning || '';
+  if (!message && meta?.message) message = meta.message;
+  if (!message && reason === 'missing_token') {
+    message = 'Tiingo API key missing — showing sample data.';
+  }
+  if (!message && source === 'mock') {
+    message = 'Using sample fallback data.';
+  }
+  if (!message && meta?.fallback && meta.fallback !== 'mock') {
+    message = `Fallback source: ${meta.fallback}`;
+  }
+
+  if (!message) {
+    detail.hidden = true;
+    detail.textContent = '';
+    detail.title = '';
+    detail.className = 'quote-warning';
+    return;
+  }
+
+  let detailClass = 'quote-warning';
+  if (reason === 'exception') {
+    detailClass += ' error';
+  } else {
+    detailClass += ' warning';
+  }
+
+  detail.hidden = false;
+  detail.textContent = message;
+  detail.title = message;
+  detail.className = detailClass;
+}
+
 function updateChartStatus(meta = {}, warning = '', count = 0) {
   const el = $('chartStatus');
   if (!el) return;
@@ -2047,17 +2121,28 @@ function renderChart(rows, intraday, events = []) {
 }
 
 async function loadLatestQuote(symbol, options = {}) {
-  const res = await callTiingo({ symbol, kind: 'intraday_latest' }, options);
-  const q = Array.isArray(res?.data) ? res.data[0] : null;
-  if (res?.meta) updateApiBadge(res.meta);
-  renderQuote(q);
-  const match = watchlist.find((item) => item.symbol === String(symbol).toUpperCase());
-  if (match && q) {
-    setWatchlistQuote(match, q, res.meta || {});
-    renderWatchlist();
-    renderMarketMovers();
+  const { silent = false } = options || {};
+  try {
+    const res = await callTiingo({ symbol, kind: 'intraday_latest' }, options);
+    const q = Array.isArray(res?.data) ? res.data[0] : null;
+    if (res?.meta) updateApiBadge(res.meta);
+    updateQuoteMeta(res?.meta || {}, res?.warning || '');
+    renderQuote(q);
+    const match = watchlist.find((item) => item.symbol === String(symbol).toUpperCase());
+    if (match && q) {
+      setWatchlistQuote(match, q, res.meta || {});
+      renderWatchlist();
+      renderMarketMovers();
+    }
+    return { quote: q, meta: res?.meta, warning: res?.warning };
+  } catch (error) {
+    if (!silent) {
+      const message = error?.userMessage || error?.message || 'Unable to load live Tiingo quote.';
+      updateQuoteMeta({ source: '', reason: 'exception' }, message);
+      renderQuote(null);
+    }
+    throw error;
   }
-  return { quote: q, meta: res?.meta, warning: res?.warning };
 }
 
 function tfParams(tf) {
@@ -2149,6 +2234,7 @@ async function loadSymbol(symbol, name, exchange) {
   $('exchangeAcronym').textContent = currentExchange ? ` ${currentExchange}` : '';
   renderWatchlist();
   showError('');
+  updateQuoteMeta({ source: '', reason: 'loading' }, 'Loading Tiingo data…');
   try {
     await loadLatestQuote(currentSymbol);
   } catch (err) {
@@ -2190,6 +2276,7 @@ async function init() {
   $('stockSymbol').textContent = currentSymbol;
   $('stockName').textContent = currentSymbolName;
   $('exchangeAcronym').textContent = currentExchange ? ` ${currentExchange}` : '';
+  updateQuoteMeta({ source: '', reason: 'loading' }, 'Loading Tiingo data…');
   try {
     await loadLatestQuote(currentSymbol);
   } catch (err) {
