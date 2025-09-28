@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quant Screener — AI Desk</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="ai-analyst.css" />
+</head>
+<body>
+  <header class="top-bar">
+    <div class="brand">
+      <i class="fa-solid fa-robot"></i>
+      <span>Quant Screener</span>
+    </div>
+    <nav class="primary-nav">
+      <a href="/ai-analyst.html">AI Copilot</a>
+      <a href="/quant-screener.html" class="active">Quant Screener</a>
+      <a href="/" target="_blank" rel="noopener">Legacy Desk</a>
+    </nav>
+  </header>
+
+  <main class="layout">
+    <section class="control-panel">
+      <div class="card">
+        <h2>Universe & filters</h2>
+        <label class="field">
+          <span>Ticker universe (comma or newline separated)</span>
+          <textarea id="universeInput" rows="8" placeholder="AAPL, MSFT, NVDA, TSLA, AMZN"></textarea>
+        </label>
+        <div class="control-grid" style="margin-top: 1rem;">
+          <label class="field">
+            <span>Minimum upside (%)</span>
+            <input id="upsideFilter" type="number" value="5" step="1" />
+          </label>
+          <label class="field">
+            <span>Maximum upside (%)</span>
+            <input id="upsideMaxFilter" type="number" placeholder="120" />
+          </label>
+        </div>
+        <div class="control-grid">
+          <label class="field">
+            <span>Market cap minimum ($B)</span>
+            <input id="marketCapMin" type="number" placeholder="10" min="0" step="10" />
+          </label>
+          <label class="field">
+            <span>Market cap maximum ($B)</span>
+            <input id="marketCapMax" type="number" placeholder="500" min="0" step="10" />
+          </label>
+        </div>
+        <label class="field">
+          <span>Sector filter (comma separated)</span>
+          <input id="sectorFilter" type="text" placeholder="Technology, Financials" />
+        </label>
+        <div class="control-grid">
+          <label class="field">
+            <span>Maximum tickers per batch</span>
+            <input id="batchSize" type="number" value="6" min="1" max="20" />
+          </label>
+        </div>
+        <div class="action-row">
+          <button class="btn primary" id="runScreen"><i class="fa-solid fa-magnifying-glass-chart"></i> Screen universe</button>
+          <button class="btn ghost" id="downloadCsv"><i class="fa-solid fa-download"></i> Export CSV</button>
+        </div>
+        <div id="screenStatus" class="status-message"></div>
+      </div>
+
+      <div class="card">
+        <h2>Market Radar</h2>
+        <div id="heatmap" class="valuation-breakdown market-radar"></div>
+      </div>
+
+      <div class="card" id="activityCard">
+        <h2>Activity monitor</h2>
+        <div id="statusLog" class="status-log is-empty">
+          <p class="status-log-placeholder">Run the screener to start logging activity.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="intel-panel">
+      <div class="card large">
+        <div class="card-header">
+          <h2>Results</h2>
+          <span id="summaryChip" class="chip">—</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="screener-table" id="screenerTable">
+            <thead>
+              <tr>
+                <th data-key="symbol">Symbol</th>
+                <th data-key="sector">Sector</th>
+                <th data-key="marketCap">Market cap</th>
+                <th data-key="price">Price</th>
+                <th data-key="fairValue">Fair value</th>
+                <th data-key="upside">Upside</th>
+                <th data-key="momentum">Momentum</th>
+                <th data-key="summary">AI remark</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="insightsCard">
+        <div class="card-header">
+          <h2>Screen insights</h2>
+          <span id="insightsMeta" class="chip chip-muted">Awaiting results</span>
+        </div>
+        <div class="insight-grid" id="insightGrid">
+          <div class="insight-item">
+            <span class="insight-label">Average upside</span>
+            <span class="insight-value" data-field="avgUpside">—</span>
+            <span class="insight-subvalue" data-field="medianUpside">Median —</span>
+          </div>
+          <div class="insight-item">
+            <span class="insight-label">Momentum</span>
+            <span class="insight-value" data-field="momentumAverage">—</span>
+            <span class="insight-subvalue" data-field="momentumMedian">Median —</span>
+          </div>
+          <div class="insight-item">
+            <span class="insight-label">Market cap</span>
+            <span class="insight-value" data-field="averageMarketCap">—</span>
+            <span class="insight-subvalue" data-field="totalMarketCap">Total —</span>
+          </div>
+          <div class="insight-item" id="insightExtrema">
+            <span class="insight-label">Extremes</span>
+            <div class="insight-extrema" data-field="extrema">No data</div>
+          </div>
+        </div>
+        <div class="sector-leaders" id="sectorLeaders">
+          <h3>Sector leadership</h3>
+          <ul class="sector-leader-list" id="sectorLeaderList"></ul>
+        </div>
+      </div>
+
+      <div class="card" id="historyCard">
+        <div class="card-header">
+          <h2>Run history</h2>
+          <div class="history-actions">
+            <button class="btn ghost" id="clearRunHistory" type="button"><i class="fa-solid fa-broom"></i> Clear</button>
+          </div>
+        </div>
+        <div class="history-list" id="runHistory"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="quant-screener.js" type="module"></script>
+</body>
+</html>
