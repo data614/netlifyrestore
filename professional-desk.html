@@ -7,13 +7,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="nav.css" />
     <link rel="stylesheet" href="./professional/pro-shared.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js" defer></script>
     <script type="module" src="./professional/professional-desk.js" defer></script>
   </head>
   <body>
-    <div class="pro-app-shell">
+      <nav class="top-nav" aria-label="Primary">
+    <div class="nav-brand">Good Hope Desk</div>
+    <div class="nav-links">
+      <a href="index.html">Trading Desk</a>
+      <a href="professional-desk.html" class="active">Professional Desk</a>
+      <a href="quant-screener.html">Quant Screener</a>
+      <a href="valuation-lab.html">Valuation Lab</a>
+      <a href="ai-analyst.html">AI Analyst</a>
+    </div>
+  </nav><div class="pro-app-shell">
       <aside class="pro-sidebar">
         <section class="pro-card pro-brand fade-in">
           <h1>Professional Desk</h1>

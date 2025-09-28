@@ -1,4 +1,15 @@
-/api/*           /.netlify/functions/:splat  200
-/ai-analyst      /ai-analyst.html               200
-/quant-screener  /quant-screener.html           200
-/*               /index.html                    200
+# API routes must come first to avoid being caught by catch-all
+/api/*                  /.netlify/functions/:splat  200
+
+# Specific page routes
+/ai-analyst            /ai-analyst.html             200
+/quant-screener        /quant-screener.html         200
+/professional-desk     /professional-desk.html      200
+/valuation-lab         /valuation-lab.html          200
+
+# Static file routes
+/index.html            /index.html                  200
+/ai-analyst.html       /ai-analyst.html             200
+/quant-screener.html   /quant-screener.html         200
+/professional-desk.html /professional-desk.html     200
+/valuation-lab.html    /valuation-lab.html          200

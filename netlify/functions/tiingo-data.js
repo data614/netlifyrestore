@@ -23,8 +23,16 @@ const DOCUMENT_LIMIT = 10;
 const FUNDAMENTAL_LIMIT = 4;
 const ACTION_LOOKBACK_DAYS = 365 * 2;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const MOCK_DATA_DIR = join(__dirname, '../..', 'data', 'tiingo-mock');
+// Handle import.meta.url compatibility
+const CURRENT_DIR = (() => {
+  try {
+    return dirname(fileURLToPath(import.meta.url));
+  } catch (e) {
+    const cwd = typeof process?.cwd === 'function' ? process.cwd() : '.';
+    return cwd;
+  }
+})();
+const MOCK_DATA_DIR = join(CURRENT_DIR, '../..', 'data', 'tiingo-mock');
 const FALLBACK_SYMBOL = 'GENERIC';
 const mockCache = new Map();
 const tiingoResponseCache = createCache({ ttl: 60_000, maxEntries: 400 });
@@ -1141,3 +1149,4 @@ export const __private = {
   pickMockSection,
   respondWithMock,
 };
+

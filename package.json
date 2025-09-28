@@ -6,7 +6,7 @@
     "clean": "rimraf build",
     "dev": "cross-env NETLIFY_CLI_DISABLE_UPDATE_CHECK=1 netlify dev",
     "start": "cross-env NETLIFY_CLI_DISABLE_UPDATE_CHECK=1 netlify dev",
-    "build": "npm run clean && shx mkdir -p build/netlify/functions && shx cp index.html app.js app.css _redirects build/ && shx cp -r netlify/functions build/netlify/functions && shx cp -r data build/data",
+    "build": "npm run clean && shx mkdir -p build/netlify/functions && shx cp *.html build/ && shx cp *.css build/ && shx cp app.js ai-analyst.js ai-analyst-batch-table.js quant-screener.js _redirects build/ && shx cp -r professional build/professional && shx cp -r netlify/functions build/netlify/functions && shx cp -r data build/data",
     "serve": "npx http-server build -p 5000 -c-1",
     "generate:symbols": "node scripts/build-symbols.mjs",
     "peer-review:inventory": "node scripts/peer-review/generate-file-inventory.mjs",
