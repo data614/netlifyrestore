@@ -1,11 +1,20 @@
 export const TIINGO_TOKEN_ENV_KEYS = [
   'TIINGO_KEY',
   'TIINGO_API_KEY',
+  'TIINGO_API_TOKEN',
   'TIINGO_TOKEN',
   'TIINGO_ACCESS_TOKEN',
+  'TIINGO_ACCESS_KEY',
+  'TIINGO_AUTH_TOKEN',
+  'TIINGO_SECRET',
+  'TIINGO_API_SECRET',
   'REACT_APP_TIINGO_KEY',
   'REACT_APP_TIINGO_TOKEN',
   'REACT_APP_API_KEY',
+  'VITE_TIINGO_KEY',
+  'VITE_TIINGO_TOKEN',
+  'VITE_APP_TIINGO_KEY',
+  'VITE_APP_TIINGO_TOKEN',
 ];
 
 const readEnvValue = (key) => {
@@ -20,8 +29,8 @@ const looksLikeToken = (v) => {
   const s = v.trim();
   if (!s) return false;
   if (/^(true|false)$/i.test(s)) return false;
-  // Tiingo tokens are typically long hex strings; accept 24-64 hex/alnum
-  return /^[a-f0-9]{24,64}$/i.test(s);
+  // Tiingo tokens are typically long hex strings; accept 24-64 characters of hex, alnum, dashes, or underscores
+  return /^[a-z0-9_-]{24,64}$/i.test(s);
 };
 
 export const getTiingoTokenDetail = () => {

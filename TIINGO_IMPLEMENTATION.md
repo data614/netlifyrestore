@@ -17,13 +17,20 @@ The Tiingo API key can be configured using any of these environment variables (i
 
 ```bash
 TIINGO_KEY=your_api_key_here
-TIINGO_API_KEY=your_api_key_here  
+TIINGO_API_KEY=your_api_key_here
+TIINGO_API_TOKEN=your_api_key_here
 TIINGO_TOKEN=your_api_key_here
 TIINGO_ACCESS_TOKEN=your_api_key_here
-REACT_APP_TIINGO_KEY=your_api_key_here
-REACT_APP_TIINGO_TOKEN=your_api_key_here
 TIINGO_ACCESS_KEY=your_api_key_here
 TIINGO_AUTH_TOKEN=your_api_key_here
+TIINGO_SECRET=your_api_key_here
+TIINGO_API_SECRET=your_api_key_here
+REACT_APP_TIINGO_KEY=your_api_key_here
+REACT_APP_TIINGO_TOKEN=your_api_key_here
+VITE_TIINGO_KEY=your_api_key_here
+VITE_TIINGO_TOKEN=your_api_key_here
+VITE_APP_TIINGO_KEY=your_api_key_here
+VITE_APP_TIINGO_TOKEN=your_api_key_here
 ```
 
 Add your API key to the `.env` file (replace `your_real_key` with your actual secret value):
