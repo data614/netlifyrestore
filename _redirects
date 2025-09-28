@@ -1,5 +1,7 @@
 # API routes must come first to avoid being caught by catch-all
-/api/*                  /.netlify/functions/:splat  200
+/api/tiingo             /.netlify/functions/tiingo   200
+/api/tiingo/*           /.netlify/functions/tiingo   200
+/api/*                  /.netlify/functions/:splat   200
 
 # Specific page routes
 /ai-analyst            /ai-analyst.html             200
