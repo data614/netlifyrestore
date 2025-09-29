@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { getTiingoToken, TIINGO_TOKEN_ENV_KEYS } from './lib/env.js';
+import { getTiingoToken, getTiingoTokenDetail, TIINGO_TOKEN_ENV_KEYS } from './lib/env.js';
 import { createCache } from './lib/cache.js';
 import buildValuationSnapshot, { summarizeValuationNarrative, valuationUtils } from './lib/valuation.js';
 import { logError } from './lib/security.js';
@@ -371,12 +371,13 @@ async function tiingo(path, params, token, options = {}) {
  * @returns {object} Headers with token information.
  */
 function metaHeaders() {
-  const chosenKey = TIINGO_TOKEN_ENV_KEYS.find((k) => typeof process.env?.[k] === 'string' && process.env[k].trim());
-  const token = getTiingoToken();
+  const detail = getTiingoTokenDetail();
+  const token = detail.token;
   const preview = token ? `${token.slice(0, 4)}...${token.slice(-4)}` : '';
   return {
-    'x-tiingo-chosen-key': chosenKey || '',
+    'x-tiingo-chosen-key': detail.key || '',
     'x-tiingo-token-preview': preview,
+    'x-tiingo-token-source': detail.source || '',
   };
 }
 
@@ -969,12 +970,14 @@ async function handleTiingoRequest(request) {
   const interval = url.searchParams.get('interval') || '';
   const limit = Number(url.searchParams.get('limit')) || DEFAULT_EOD_POINTS;
 
-  const token = getTiingoToken();
+  const tokenDetail = getTiingoTokenDetail();
+  const token = tokenDetail.token;
   if (!token) {
     console.warn(`[tiingo] ${symbol}(${kind}): no Tiingo token found. Checked keys: ${TIINGO_TOKEN_ENV_KEYS.join(', ')}`);
     return respondWithMock(kind, symbol, limit, 'Tiingo API key missing. Showing sample data.', {
       reason: 'missing_token',
       envKeysChecked: TIINGO_TOKEN_ENV_KEYS,
+      tokenSource: tokenDetail.source || 'not-found',
     });
   }
 

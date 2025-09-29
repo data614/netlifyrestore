@@ -38,6 +38,11 @@ Add your API key to the `.env` file (replace `your_real_key` with your actual se
 TIINGO_KEY=your_real_key
 ```
 
+> **Tip:** The Netlify function now extracts Tiingo tokens even from loosely formatted values. A value such as
+> `"token=abcd..."` or `"Bearer abcd..."` is automatically cleaned so long as it contains a 24+ character alphanumeric token.
+> Lowercase environment variable names and accidental `KEY=value` swaps are also detected, so any reasonable secret placement
+> will be discovered during deployment.
+
 ## Implementation Options
 
 ### 1. Netlify Function (Production)
@@ -50,6 +55,8 @@ This is the main production implementation that handles:
 - Caching with appropriate TTL
 - Error handling and logging
 - CORS headers
+- Response metadata headers: every reply includes `x-tiingo-token-preview`, `x-tiingo-chosen-key`, and `x-tiingo-token-source`
+  so you can immediately confirm which environment secret powered the live Tiingo request.
 
 **Usage via REST API:**
 ```
