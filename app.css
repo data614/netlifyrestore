@@ -26,11 +26,19 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-se
 .chip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:var(--text-secondary);padding:6px 10px;border-radius:999px;font-size:12px;transition:background-color .2s ease,color .2s ease,border-color .2s ease}
 .chip.chip-warning{background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.35);color:#ffb3a8}
 .chip.chip-live{background:rgba(46,204,113,.18);border-color:rgba(46,204,113,.4);color:#d4ffe4}
+.stock-header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.stock-title{display:flex;flex-direction:column;gap:6px}
 .stock-header h1{margin:0;font-size:2.2em;display:flex;align-items:center;gap:8px}
 .stock-header h1 small{font-size:.5em;color:var(--text-secondary)}
+.stock-price-section{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0}
+.stock-price-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;justify-content:flex-end}
 .stock-price{font-size:2.2em;font-weight:800}
-.stock-change{font-size:1.05em;margin-left:12px}
+.stock-change{font-size:1.05em}
 .positive-change{color:var(--accent-green)} .negative-change{color:var(--accent-red)}
+.quote-meta{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.quote-warning{font-size:.78em;color:var(--text-secondary);text-align:right;max-width:320px}
+.quote-warning.warning{color:#f1c40f}
+.quote-warning.error{color:var(--accent-red)}
 #stockChart{max-height:420px;height:320px;min-height:260px;width:100%;display:block}
 .chart-status{margin-top:8px;font-size:.9em;min-height:1.2em;transition:color .2s ease}
 .chart-status.positive{color:var(--accent-green)}
@@ -153,9 +161,13 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-se
 
 @media (max-width:680px){
   .nav-links a{padding:8px 10px}
-  .stock-header{display:flex;flex-direction:column;gap:12px}
+  .stock-header{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
   .stock-header h1{font-size:1.6em}
   .stock-price{font-size:1.8em}
+  .stock-price-section{align-items:flex-start;width:100%}
+  .stock-price-row{justify-content:flex-start}
+  .quote-meta{justify-content:flex-start}
+  .quote-warning{text-align:left}
   .tf button{flex:1 0 90px}
   .digital-clock-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
   .data-table{min-width:320px}
