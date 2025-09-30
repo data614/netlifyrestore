@@ -1,4 +1,4 @@
-import { TIINGO_TOKEN_ENV_KEYS, isEnvPresent, getTiingoToken } from './lib/env.js';
+import { TIINGO_TOKEN_ENV_KEYS, isEnvPresent, getTiingoToken, getTiingoTokenDetail } from './lib/env.js';
 
 const KEY_ALIASES = {
   EMAILJS_PRIVATE_KEY: ["EMAILJS_PRIVATE_KEY", "EMAILS_PRIVATE_KEY"],
@@ -23,10 +23,15 @@ export default async () => {
   }
 
   // TIINGO details
-  const chosenKey = TIINGO_TOKEN_ENV_KEYS.find((k) => isEnvPresent(k));
-  const token = getTiingoToken();
+  const detail = getTiingoTokenDetail();
+  const token = detail.token || getTiingoToken();
+  const chosenKey = detail.key || TIINGO_TOKEN_ENV_KEYS.find((k) => isEnvPresent(k)) || '';
   const tokenPreview = token ? `${token.slice(0,4)}...${token.slice(-4)}` : '';
   const tiingoCandidates = Object.fromEntries(TIINGO_TOKEN_ENV_KEYS.map((k) => [k, isEnvPresent(k)]));
+  const detailMeta = {
+    key: detail.key || '',
+    resolvedFromScan: detail.key ? !TIINGO_TOKEN_ENV_KEYS.includes(detail.key) : false,
+  };
 
   // Alias details for other groups
   const aliasDetails = {};
@@ -42,7 +47,7 @@ export default async () => {
   return Response.json({
     env: present,
     meta: {
-      tiingo: { chosenKey, tokenPreview, hasToken: !!token, candidates: tiingoCandidates, order: TIINGO_TOKEN_ENV_KEYS },
+      tiingo: { chosenKey, tokenPreview, hasToken: !!token, candidates: tiingoCandidates, order: TIINGO_TOKEN_ENV_KEYS, detail: detailMeta },
       aliases: aliasDetails,
     }
   });
