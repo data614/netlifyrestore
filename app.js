@@ -4,6 +4,7 @@ import { loadPreferences, updatePreferences } from './utils/user-preferences.js'
 import { createLatestPromiseRunner, createOperationTokenSource } from './utils/task-guards.js';
 import { createPassiveRuntimeMonitor } from './utils/runtime-monitor.js';
 import createLoadingOverlayController from './utils/dom-loading-overlay.js';
+import loadMockTiingo from './utils/mock-tiingo.js';
 
 const createMemoryStorage = () => {
   const store = new Map();
@@ -230,6 +231,23 @@ const fmtPct = (n) => {
 
 /* API wrapper */
 const API = '/api';
+
+function resolveApiOrigin() {
+  if (typeof window === 'undefined' || !window.location) {
+    return 'http://localhost';
+  }
+  const { origin, href } = window.location;
+  if (origin && origin !== 'null') return origin;
+  if (href) {
+    try {
+      const base = new URL(href, 'http://localhost');
+      return base.origin || 'http://localhost';
+    } catch (error) {
+      console.warn('Unable to resolve API origin from window.location.href', error);
+    }
+  }
+  return 'http://localhost';
+}
 const tiingoRequestCache = createMonitoredCache('tiingo', { ttl: 30000, maxEntries: 80 });
 const searchResultCache = createMonitoredCache('search', { ttl: 120000, maxEntries: 120 });
 const newsRequestCache = createMonitoredCache('news', { ttl: 5 * 60 * 1000, maxEntries: 12 });
@@ -279,7 +297,7 @@ function defaultTiingoCacheTtl(params = {}) {
 
 async function callTiingo(params, options = {}) {
   const { silent = false, forceRefresh = false, cacheTtl } = options || {};
-  const url = new URL(`${API}/tiingo`, window.location.origin);
+  const url = new URL(`${API}/tiingo`, resolveApiOrigin());
   Object.entries(params || {}).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
   });
@@ -290,7 +308,8 @@ async function callTiingo(params, options = {}) {
     if (cached) {
       if (!silent) showLoading(false);
       // Mirror "main" branch behavior: surface friendly warnings on cached hits too
-      if (!silent && cached?.meta?.reason === 'exception') {
+      const cachedReason = String(cached?.meta?.reason || '').toLowerCase();
+      if (!silent && (cachedReason === 'exception' || cachedReason === 'local_mock_fallback')) {
         const friendlyWarning = getFriendlyErrorMessage({
           context: 'tiingo',
           message: cached?.warning || cached?.meta?.message || '',
@@ -318,8 +337,6 @@ async function callTiingo(params, options = {}) {
           const error = new Error(data?.warning || data?.error || resp.statusText || 'Tiingo request failed.');
           error.status = resp.status;
           error.response = data;
-          fetchTracker.fail(error);
-          completed = true;
           throw error;
         }
         if (data?.warning) {
@@ -346,14 +363,26 @@ async function callTiingo(params, options = {}) {
         };
       } catch (error) {
         if (!completed) fetchTracker.fail(error);
+        const fallback = await loadMockTiingo(params, { error, status: error?.status });
+        if (fallback) {
+          appMonitor.trackWarning('Tiingo request fallback', { key, reason: error?.message || 'fallback_to_mock' });
+          return fallback;
+        }
         throw error;
       }
     };
 
     const payload = await tiingoRequestCache.resolve(key, loader, ttl);
 
+    requestTracker.succeed({
+      warning: Boolean(payload?.warning),
+      reason: payload?.meta?.reason || 'ok',
+      source: payload?.meta?.source || '',
+    });
+
     if (!silent) {
-      if (payload?.meta?.reason === 'exception') {
+      const reason = String(payload?.meta?.reason || '').toLowerCase();
+      if (reason === 'exception' || reason === 'local_mock_fallback') {
         const friendlyWarning = getFriendlyErrorMessage({
           context: 'tiingo',
           message: payload?.warning || payload?.meta?.message || '',
@@ -365,8 +394,6 @@ async function callTiingo(params, options = {}) {
         showError('');
       }
     }
-
-    requestTracker.succeed({ warning: Boolean(payload?.warning), reason: payload?.meta?.reason || 'ok' });
     return payload;
   } catch (err) {
     const enhanced = enrichError(err, {

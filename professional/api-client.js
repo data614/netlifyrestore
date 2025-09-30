@@ -1,9 +1,27 @@
 import { getResearchLabInsights, getScreenerSnapshot } from './research-data.js';
+import loadMockTiingo from '../utils/mock-tiingo.js';
 
 const API_ROOT = '/api/tiingo';
 
+function resolveApiOrigin() {
+  if (typeof window === 'undefined' || !window.location) {
+    return 'http://localhost';
+  }
+  const { origin, href } = window.location;
+  if (origin && origin !== 'null') return origin;
+  if (href) {
+    try {
+      const base = new URL(href, 'http://localhost');
+      return base.origin || 'http://localhost';
+    } catch (error) {
+      console.warn('Unable to resolve API origin for professional client', error);
+    }
+  }
+  return 'http://localhost';
+}
+
 function buildUrl(params = {}) {
-  const url = new URL(API_ROOT, window.location.origin);
+  const url = new URL(API_ROOT, resolveApiOrigin());
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return;
     url.searchParams.set(key, value);
@@ -13,20 +31,29 @@ function buildUrl(params = {}) {
 
 async function requestTiingo(params) {
   const url = buildUrl(params);
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: { Accept: 'application/json' },
-  });
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = data?.warning || data?.error || response.statusText;
-    const error = new Error(message || 'Request failed');
-    error.response = data;
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = data?.warning || data?.error || response.statusText;
+      const error = new Error(message || 'Request failed');
+      error.response = data;
+      error.status = response.status;
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    const fallback = await loadMockTiingo(params, { error, status: error?.status });
+    if (fallback?.body) {
+      return fallback.body;
+    }
     throw error;
   }
-
-  return data;
 }
 
 const RANGE_LIMITS = {
