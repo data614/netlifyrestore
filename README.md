@@ -7,6 +7,7 @@ AI Analyst, Quant Screener, Valuation Lab, and Professional Desk experiences.
 
 - Automated unit tests: `npm test`
 - Merge conflict scan: `npm run qa:conflicts`
+- Secret scan for Tiingo helpers: `npm run scan:tiingo`
 - Manual regression playbook: [`docs/manual-testing/e2e-regression-plan.md`](docs/manual-testing/e2e-regression-plan.md)
 - Staging deployment checklist: [`docs/manual-testing/staging-deployment-checklist.md`](docs/manual-testing/staging-deployment-checklist.md)
 - Hosted validation environment: <https://trade.goodhopecorp.com>
