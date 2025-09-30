@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { getTiingoToken, TIINGO_TOKEN_ENV_KEYS } from './lib/env.js';
+import { getTiingoToken, getTiingoTokenDetail, TIINGO_TOKEN_ENV_KEYS } from './lib/env.js';
 import { createCache } from './lib/cache.js';
 import buildValuationSnapshot, { summarizeValuationNarrative, valuationUtils } from './lib/valuation.js';
 import { logError } from './lib/security.js';
@@ -371,11 +371,12 @@ async function tiingo(path, params, token, options = {}) {
  * @returns {object} Headers with token information.
  */
 function metaHeaders() {
-  const chosenKey = TIINGO_TOKEN_ENV_KEYS.find((k) => typeof process.env?.[k] === 'string' && process.env[k].trim());
-  const token = getTiingoToken();
+  const detail = getTiingoTokenDetail();
+  const chosenKey = detail.key || TIINGO_TOKEN_ENV_KEYS.find((k) => typeof process.env?.[k] === 'string' && process.env[k].trim()) || '';
+  const token = detail.token || getTiingoToken();
   const preview = token ? `${token.slice(0, 4)}...${token.slice(-4)}` : '';
   return {
-    'x-tiingo-chosen-key': chosenKey || '',
+    'x-tiingo-chosen-key': chosenKey,
     'x-tiingo-token-preview': preview,
   };
 }
@@ -842,22 +843,26 @@ export async function loadValuation(symbol, token) {
 // --- Mock handler ---
 
 async function respondWithMock(kind, symbol, limit, warning, meta = {}) {
-  const upper = (symbol || 'MOCK').toUpperCase();
+  const requestedKind = (kind || 'eod').toLowerCase();
+  const canonicalKind = ['quotes', 'quote'].includes(requestedKind) ? 'intraday_latest' : requestedKind;
+  const upper = (symbol || FALLBACK_SYMBOL).toUpperCase();
   const record = await readMockData(upper);
   const mockSource = record.source
     ? record.source === upper
       ? 'file:symbol'
       : `file:${record.source.toLowerCase()}`
     : 'generated';
+  const warnKind = canonicalKind === requestedKind ? canonicalKind : `${requestedKind}→${canonicalKind}`;
   const baseMeta = {
     ...meta,
     mockSource,
     mockFilePath: record.path || '',
+    ...(canonicalKind !== requestedKind ? { requestedKind } : {}),
   };
 
   const respond = (data, extraMeta = {}) => {
-    console.warn(`[tiingo] ${upper}(${kind}): using MOCK data (${baseMeta.reason || 'unknown'}) [${baseMeta.mockSource}]`);
-    return mockResponse(upper, kind, warning, data, { ...baseMeta, ...extraMeta });
+    console.warn(`[tiingo] ${upper}(${warnKind}): using MOCK data (${baseMeta.reason || 'unknown'}) [${baseMeta.mockSource}]`);
+    return mockResponse(upper, canonicalKind, warning, data, { ...baseMeta, ...extraMeta });
   };
 
   const fromFile = (section) => {
@@ -869,37 +874,37 @@ async function respondWithMock(kind, symbol, limit, warning, meta = {}) {
     return value;
   };
 
-  if (kind === 'news') {
+  if (canonicalKind === 'news') {
     const news = fromFile('news');
     if (Array.isArray(news) && news.length) return respond(news);
     return respond(mockNews(upper, limit), { generator: 'procedural' });
   }
 
-  if (kind === 'documents' || kind === 'filings') {
+  if (canonicalKind === 'documents' || canonicalKind === 'filings') {
     const docs = fromFile('filings') || fromFile('documents');
     if (Array.isArray(docs) && docs.length) return respond(docs);
     return respond(mockFilings(upper, limit), { generator: 'procedural' });
   }
 
-  if (kind === 'fundamentals') {
+  if (canonicalKind === 'fundamentals') {
     const fundamentals = fromFile('fundamentals');
     if (fundamentals && fundamentals.latest) return respond(fundamentals);
     return respond(mockFundamentals(upper), { generator: 'procedural' });
   }
 
-  if (kind === 'actions') {
+  if (canonicalKind === 'actions') {
     const actions = fromFile('actions');
     if (actions && (actions.dividends?.length || actions.splits?.length)) return respond(actions);
     return respond(mockActions(upper), { generator: 'procedural' });
   }
 
-  if (kind === 'overview') {
+  if (canonicalKind === 'overview') {
     const overview = fromFile('overview');
     if (overview) return respond(overview);
     return respond(mockOverview(upper), { generator: 'procedural' });
   }
 
-  if (kind === 'statements') {
+  if (canonicalKind === 'statements') {
     const statements = fromFile('statements');
     if (statements && (statements.income?.length || statements.balanceSheet?.length || statements.cashFlow?.length)) {
       return respond(statements);
@@ -907,7 +912,7 @@ async function respondWithMock(kind, symbol, limit, warning, meta = {}) {
     return respond(mockStatements(upper), { generator: 'procedural' });
   }
 
-  if (kind === 'valuation') {
+  if (canonicalKind === 'valuation') {
     const valuation = fromFile('valuation');
     if (valuation) return respond(valuation);
 
@@ -936,7 +941,7 @@ async function respondWithMock(kind, symbol, limit, warning, meta = {}) {
     }, { generator: 'procedural' });
   }
 
-  if (kind === 'intraday_latest') {
+  if (canonicalKind === 'intraday_latest') {
     const quote = fromFile('quote');
     if (quote) return respond([quote]);
     const intraday = fromFile('intraday');
@@ -944,7 +949,7 @@ async function respondWithMock(kind, symbol, limit, warning, meta = {}) {
     return respond([mockQuote(upper)], { generator: 'procedural' });
   }
 
-  if (kind === 'intraday') {
+  if (canonicalKind === 'intraday') {
     const intraday = fromFile('intraday');
     if (Array.isArray(intraday) && intraday.length) return respond(intraday.slice(-limit));
     return respond(mockSeries(upper, limit, 'intraday'), { generator: 'procedural' });
@@ -964,133 +969,142 @@ async function respondWithMock(kind, symbol, limit, warning, meta = {}) {
  */
 async function handleTiingoRequest(request) {
   const url = new URL(request.url);
-  const kind = url.searchParams.get('kind') || 'eod';
+  const rawKind = url.searchParams.get('kind') || 'eod';
+  const requestedKind = rawKind.toLowerCase();
+  const canonicalKind = ['quotes', 'quote'].includes(requestedKind) ? 'intraday_latest' : requestedKind;
   const symbol = (url.searchParams.get('symbol') || 'AAPL').toUpperCase();
   const interval = url.searchParams.get('interval') || '';
-  const limit = Number(url.searchParams.get('limit')) || DEFAULT_EOD_POINTS;
+  const limitParam = Number(url.searchParams.get('limit'));
+  const limit = Number.isFinite(limitParam) && limitParam > 0
+    ? limitParam
+    : canonicalKind === 'intraday'
+      ? DEFAULT_INTRADAY_POINTS
+      : DEFAULT_EOD_POINTS;
+  const metaBase = { kind: canonicalKind, ...(canonicalKind !== requestedKind ? { requestedKind } : {}) };
+  const logKind = canonicalKind === requestedKind ? canonicalKind : `${requestedKind}->${canonicalKind}`;
 
   const token = getTiingoToken();
   if (!token) {
-    console.warn(`[tiingo] ${symbol}(${kind}): no Tiingo token found. Checked keys: ${TIINGO_TOKEN_ENV_KEYS.join(', ')}`);
-    return respondWithMock(kind, symbol, limit, 'Tiingo API key missing. Showing sample data.', {
+    console.warn(`[tiingo] ${symbol}(${logKind}): no Tiingo token found. Checked keys: ${TIINGO_TOKEN_ENV_KEYS.join(', ')}`);
+    return respondWithMock(requestedKind, symbol, limit, 'Tiingo API key missing. Showing sample data.', {
       reason: 'missing_token',
       envKeysChecked: TIINGO_TOKEN_ENV_KEYS,
     });
   }
 
   try {
-    if (kind === 'intraday_latest') {
+    if (canonicalKind === 'intraday_latest') {
       const quote = await loadIntradayLatest(symbol, token);
       if (quote) {
-        return ok({ symbol, data: [quote] }, 'live', { 'cache-control': 'public, max-age=10, s-maxage=20' });
+        return ok({ symbol, data: [quote] }, 'live', { 'cache-control': 'public, max-age=10, s-maxage=20' }, metaBase);
       }
       const eod = await loadEod(symbol, 1, token).catch(() => []);
       if (eod.length) {
-        console.warn(`[tiingo] ${symbol}(${kind}): intraday latest unavailable -> EOD fallback`);
+        console.warn(`[tiingo] ${symbol}(${logKind}): intraday latest unavailable -> EOD fallback`);
         return ok(
           { symbol, data: [eod[0]], warning: 'Intraday latest unavailable; showing EOD.' },
           'eod-fallback',
           { 'cache-control': 'public, max-age=600, s-maxage=1200' },
-          { reason: 'intraday_latest_unavailable' },
+          { ...metaBase, reason: 'intraday_latest_unavailable' },
         );
       }
-      return respondWithMock(kind, symbol, limit, 'Intraday latest unavailable. Showing sample data.', {
+      return respondWithMock(requestedKind, symbol, limit, 'Intraday latest unavailable. Showing sample data.', {
         reason: 'intraday_latest_unavailable_and_no_eod',
       });
     }
 
-    if (kind === 'intraday') {
+    if (canonicalKind === 'intraday') {
       const rows = await loadIntraday(symbol, interval, limit, token);
       if (rows.length) {
-        return ok({ symbol, data: rows }, 'live', { 'cache-control': 'public, max-age=30, s-maxage=60' });
+        return ok({ symbol, data: rows }, 'live', { 'cache-control': 'public, max-age=30, s-maxage=60' }, metaBase);
       }
       const eod = await loadEod(symbol, limit, token).catch(() => []);
       if (eod.length) {
-        console.warn(`[tiingo] ${symbol}(${kind}): intraday unavailable -> EOD fallback`);
+        console.warn(`[tiingo] ${symbol}(${logKind}): intraday unavailable -> EOD fallback`);
         return ok(
           { symbol, data: eod, warning: 'Intraday unavailable; showing EOD.' },
           'eod-fallback',
           { 'cache-control': 'public, max-age=600, s-maxage=1200' },
-          { reason: 'intraday_unavailable' },
+          { ...metaBase, reason: 'intraday_unavailable' },
         );
       }
-      return respondWithMock(kind, symbol, limit, 'Intraday unavailable. Showing sample data.', {
+      return respondWithMock(requestedKind, symbol, limit, 'Intraday unavailable. Showing sample data.', {
         reason: 'intraday_unavailable_and_no_eod',
       });
     }
 
-    if (kind === 'news') {
+    if (canonicalKind === 'news') {
       const news = await loadCompanyNews(symbol, limit, token);
       if (news.length) {
-        return ok({ symbol, data: news }, 'live', { 'cache-control': 'public, max-age=300, s-maxage=600' });
+        return ok({ symbol, data: news }, 'live', { 'cache-control': 'public, max-age=300, s-maxage=600' }, metaBase);
       }
-      return respondWithMock(kind, symbol, limit, 'Company news unavailable. Showing sample data.', { reason: 'news_unavailable' });
+      return respondWithMock(requestedKind, symbol, limit, 'Company news unavailable. Showing sample data.', { reason: 'news_unavailable' });
     }
 
-    if (kind === 'documents') {
+    if (canonicalKind === 'documents') {
       const docs = await loadCompanyDocuments(symbol, limit, token);
       if (docs.length) {
-        return ok({ symbol, data: docs }, 'live', { 'cache-control': 'public, max-age=900, s-maxage=1800' });
+        return ok({ symbol, data: docs }, 'live', { 'cache-control': 'public, max-age=900, s-maxage=1800' }, metaBase);
       }
-      return respondWithMock(kind, symbol, limit, 'Company filings unavailable. Showing sample data.', { reason: 'documents_unavailable' });
+      return respondWithMock(requestedKind, symbol, limit, 'Company filings unavailable. Showing sample data.', { reason: 'documents_unavailable' });
     }
 
-    if (kind === 'filings') {
+    if (canonicalKind === 'filings') {
       const filings = await loadSecFilings(symbol, limit, token);
       if (filings.length) {
-        return ok({ symbol, data: filings }, 'live', { 'cache-control': 'public, max-age=900, s-maxage=1800' });
+        return ok({ symbol, data: filings }, 'live', { 'cache-control': 'public, max-age=900, s-maxage=1800' }, metaBase);
       }
-      return respondWithMock(kind, symbol, limit, 'SEC filings unavailable. Showing sample data.', { reason: 'filings_unavailable' });
+      return respondWithMock(requestedKind, symbol, limit, 'SEC filings unavailable. Showing sample data.', { reason: 'filings_unavailable' });
     }
 
-    if (kind === 'fundamentals') {
+    if (canonicalKind === 'fundamentals') {
       const fundamentals = await loadFundamentals(symbol, token, limit);
-      if (fundamentals.latest) {
-        return ok({ symbol, data: fundamentals }, 'live', { 'cache-control': 'public, max-age=43200, s-maxage=86400' });
+      if (fundamentals?.latest) {
+        return ok({ symbol, data: fundamentals }, 'live', { 'cache-control': 'public, max-age=43200, s-maxage=86400' }, metaBase);
       }
-      return respondWithMock(kind, symbol, limit, 'Fundamentals unavailable. Showing sample data.', { reason: 'fundamentals_unavailable' });
+      return respondWithMock(requestedKind, symbol, limit, 'Fundamentals unavailable. Showing sample data.', { reason: 'fundamentals_unavailable' });
     }
 
-    if (kind === 'actions') {
+    if (canonicalKind === 'actions') {
       const actions = await loadCorporateActions(symbol, token);
       if ((actions.dividends && actions.dividends.length) || (actions.splits && actions.splits.length)) {
-        return ok({ symbol, data: actions }, 'live', { 'cache-control': 'public, max-age=86400, s-maxage=172800' });
+        return ok({ symbol, data: actions }, 'live', { 'cache-control': 'public, max-age=86400, s-maxage=172800' }, metaBase);
       }
-      return respondWithMock(kind, symbol, limit, 'Corporate actions unavailable. Showing sample data.', { reason: 'actions_unavailable' });
+      return respondWithMock(requestedKind, symbol, limit, 'Corporate actions unavailable. Showing sample data.', { reason: 'actions_unavailable' });
     }
 
-    if (kind === 'overview') {
+    if (canonicalKind === 'overview') {
       const overview = await loadCompanyOverview(symbol, token);
       if (overview) {
-        return ok({ symbol, data: overview }, 'live', { 'cache-control': 'public, max-age=43200, s-maxage=86400' });
+        return ok({ symbol, data: overview }, 'live', { 'cache-control': 'public, max-age=43200, s-maxage=86400' }, metaBase);
       }
-      return respondWithMock(kind, symbol, limit, 'Company overview unavailable. Showing sample data.', { reason: 'overview_unavailable' });
+      return respondWithMock(requestedKind, symbol, limit, 'Company overview unavailable. Showing sample data.', { reason: 'overview_unavailable' });
     }
 
-    if (kind === 'statements') {
+    if (canonicalKind === 'statements') {
       const statements = await loadFinancialStatements(symbol, token, limit);
-      if (statements.income.length || statements.balanceSheet.length || statements.cashFlow.length) {
-        return ok({ symbol, data: statements }, 'live', { 'cache-control': 'public, max-age=21600, s-maxage=43200' });
+      if (statements && (statements.income?.length || statements.balanceSheet?.length || statements.cashFlow?.length)) {
+        return ok({ symbol, data: statements }, 'live', { 'cache-control': 'public, max-age=21600, s-maxage=43200' }, metaBase);
       }
-      return respondWithMock(kind, symbol, limit, 'Financial statements unavailable. Showing sample data.', { reason: 'statements_unavailable' });
+      return respondWithMock(requestedKind, symbol, limit, 'Financial statements unavailable. Showing sample data.', { reason: 'statements_unavailable' });
     }
 
-    if (kind === 'valuation') {
+    if (canonicalKind === 'valuation') {
       const valuation = await loadValuation(symbol, token);
       if (valuation) {
-        return ok({ symbol, data: valuation }, 'live', { 'cache-control': 'public, max-age=900, s-maxage=1800' });
+        return ok({ symbol, data: valuation }, 'live', { 'cache-control': 'public, max-age=900, s-maxage=1800' }, metaBase);
       }
-      return respondWithMock(kind, symbol, limit, 'Valuation snapshot unavailable. Showing sample data.', { reason: 'valuation_unavailable' });
+      return respondWithMock(requestedKind, symbol, limit, 'Valuation snapshot unavailable. Showing sample data.', { reason: 'valuation_unavailable' });
     }
 
     const rows = await loadEod(symbol, limit, token);
     if (rows.length) {
-      return ok({ symbol, data: rows }, 'live', { 'cache-control': 'public, max-age=600, s-maxage=1200' });
+      return ok({ symbol, data: rows }, 'live', { 'cache-control': 'public, max-age=600, s-maxage=1200' }, metaBase);
     }
-    return respondWithMock(kind, symbol, limit, 'EOD unavailable. Showing sample data.', { reason: 'eod_unavailable' });
+    return respondWithMock(requestedKind, symbol, limit, 'EOD unavailable. Showing sample data.', { reason: 'eod_unavailable' });
   } catch (err) {
-    const message = logError(`Tiingo request failed for ${symbol}`, err, { maxLength: 200 });
-    return respondWithMock(kind, symbol, limit, 'Tiingo request failed. Showing sample data.', {
+    const message = logError(`Tiingo request failed for ${symbol}(${logKind})`, err, { maxLength: 200 });
+    return respondWithMock(requestedKind, symbol, limit, 'Tiingo request failed. Showing sample data.', {
       reason: 'exception',
       message,
     });
