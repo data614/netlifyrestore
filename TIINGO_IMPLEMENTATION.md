@@ -202,8 +202,8 @@ node simple-test-client.js
 # Test Netlify function locally (requires netlify dev)
 node test-tiingo.js
 
-# Test specific run
-node run-tiingo.mjs
+# Test specific run (supports symbol/kind arguments)
+node run-tiingo.mjs MSFT intraday --limit=20
 ```
 
 ## Frontend Integration
