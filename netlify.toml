@@ -46,16 +46,6 @@
 
 # SPA + Functions routing
 [[redirects]]
-  from = "/api/tiingo"
-  to = "/.netlify/functions/tiingo"
-  status = 200
-
-[[redirects]]
-  from = "/api/tiingo/*"
-  to = "/.netlify/functions/tiingo"
-  status = 200
-
-[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
