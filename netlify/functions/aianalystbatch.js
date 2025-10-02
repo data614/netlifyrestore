@@ -1,4 +1,4 @@
-import { gatherSymbolIntel } from './aiAnalyst.js';
+import { gatherSymbolIntel } from './aianalyst.js';
 import { logError } from './lib/security.js';
 
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';

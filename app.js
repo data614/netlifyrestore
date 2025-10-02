@@ -393,9 +393,9 @@ async function callTiingo(params, options = {}) {
 
 /* App state */
 let priceChart = null;
-let currentSymbol = userPreferences.symbol || 'AAPL';
-let currentSymbolName = userPreferences.symbolName || 'Apple Inc.';
-let currentExchange = userPreferences.exchange || 'XNAS';
+let currentSymbol = userPreferences.symbol || 'WOW';
+let currentSymbolName = userPreferences.symbolName || 'Woolworths Group Ltd';
+let currentExchange = userPreferences.exchange || 'XASX';
 let currentTimeframe = userPreferences.timeframe || '1D';
 let watchlist = [];
 let selectedExchange = userPreferences.searchExchange || '';
@@ -454,9 +454,11 @@ function isMarketOpen(timezone, marketStart, marketEnd) {
 
 const WATCHLIST_STORAGE_KEY = 'tiingo.watchlist';
 const DEFAULT_WATCHLIST = [
-  { symbol: 'AAPL', name: 'Apple Inc.', mic: 'XNAS', exchange: 'NASDAQ' },
-  { symbol: 'MSFT', name: 'Microsoft Corporation', mic: 'XNAS', exchange: 'NASDAQ' },
-  { symbol: 'TSLA', name: 'Tesla, Inc.', mic: 'XNAS', exchange: 'NASDAQ' },
+  { symbol: 'WOW', name: 'Woolworths Group Ltd', mic: 'XASX', exchange: 'ASX' },
+  { symbol: 'CBA', name: 'Commonwealth Bank', mic: 'XASX', exchange: 'ASX' },
+  { symbol: 'BHP', name: 'BHP Group Ltd', mic: 'XASX', exchange: 'ASX' },
+  { symbol: 'CSL', name: 'CSL Limited', mic: 'XASX', exchange: 'ASX' },
+  { symbol: 'WES', name: 'Wesfarmers Ltd', mic: 'XASX', exchange: 'ASX' },
 ];
 const SEARCH_PLACEHOLDER = 'Start typing to searchÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦';
 
