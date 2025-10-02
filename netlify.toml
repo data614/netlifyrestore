@@ -1,0 +1,133 @@
+functionsDirectory = "C:\\Users\\Anthony Ni\\Downloads\\netlifyrestore\\netlify\\functions"
+functionsDirectoryOrigin = "config"
+redirectsOrigin = "config"
+plugins = []
+headers = []
+
+[build]
+publish = "C:\\Users\\Anthony Ni\\Downloads\\netlifyrestore\\build"
+publishOrigin = "config"
+commandOrigin = "config"
+command = "npm run build"
+functions = "C:\\Users\\Anthony Ni\\Downloads\\netlifyrestore\\netlify\\functions"
+
+  [build.environment]
+
+  [build.processing]
+
+    [build.processing.css]
+
+    [build.processing.html]
+
+    [build.processing.images]
+
+    [build.processing.js]
+
+  [build.services]
+
+[secrets_scan]
+enabled = true
+omit_keys = [
+  "EMAILJS_PRIVATE_KEY",
+  "EMAILJS_SERVICE_ID",
+  "EMAILJS_TEMPLATE_ID",
+  "EMAILS_PRIVATE_KEY",
+  "EMAILS_SERVICE_ID",
+  "EMAILS_TEMPLATE_ID",
+  "KV_TOKEN",
+  "KV_URL",
+  "TIINGO_KEY",
+  "TIINGO_API_KEY",
+  "TIINGO_TOKEN",
+  "TIINGO_ACCESS_TOKEN",
+  "REACT_APP_API_KEY",
+  "REACT_APP_TIINGO_KEY",
+  "REACT_APP_TIINGO_TOKEN"
+]
+omit_paths = [
+  ".env",
+  ".env.*",
+  ".env.example",
+  "scripts/local/*",
+  "tests/fixtures/*",
+  "README.md"
+]
+
+[functions]
+
+  [functions."*"]
+  node_bundler = "esbuild"
+  node_version = "22"
+  format = "esm"
+
+[[redirects]]
+from = "/ai-analyst"
+to = "/ai-analyst.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/quant-screener"
+to = "/quant-screener.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/"
+to = "/home"
+status = 301
+force = true
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/api-test"
+to = "/api-test.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/api/*"
+to = "/.netlify/functions/:splat"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
