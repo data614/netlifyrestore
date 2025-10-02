@@ -27,7 +27,8 @@ const ACTION_LOOKBACK_DAYS = 365 * 2;
 const MOCK_DATA_DIR = join(process.cwd(), 'data', 'tiingo-mock');
 const FALLBACK_SYMBOL = 'GENERIC';
 const mockCache = new Map();
-const tiingoResponseCache = createCache({ ttl: 60_000, maxEntries: 400 });
+// Optimized cache with 5-minute TTL for financial data and increased capacity
+const tiingoResponseCache = createCache({ ttl: 300_000, maxEntries: 800 });
 
 // --- Mock Data Generators ---
 
@@ -334,32 +335,55 @@ async function tiingo(path, params, token, options = {}) {
   }
 
   const loader = async () => {
-    // Use Authorization header method
+    // Use Authorization header method with connection optimizations
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Token ${token}`
+      'Authorization': `Token ${token}`,
+      'Connection': 'keep-alive',
+      'Keep-Alive': 'timeout=30, max=100'
     };
+
+    // Add 8-second timeout to prevent hanging requests
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 8000);
     
-    const response = await fetch(url, { headers });
-    const text = await response.text();
-    let data = null;
+    try {
+      const response = await fetch(url, { 
+        headers,
+        signal: abortController.signal,
+        // Additional performance optimizations
+        mode: 'cors',
+        cache: 'no-cache',
+        redirect: 'follow'
+      });
+      clearTimeout(timeoutId);
+      const text = await response.text();
+      let data = null;
 
-    // Parse the response data
-    if (text) {
-      try {
-        data = JSON.parse(text);
-      } catch {
-        // Ignore JSON parsing errors for non-JSON responses
+      // Parse the response data
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          // Ignore JSON parsing errors for non-JSON responses
+        }
       }
-    }
 
-    // Throw error if the response was not successful
-    if (!response.ok) {
-      const message = (data && (data.message || data.error || data.detail)) || text || response.statusText;
-      throw new Error(`Tiingo ${response.status}: ${String(message).slice(0, 200)}`);
-    }
+      // Throw error if the response was not successful
+      if (!response.ok) {
+        const message = (data && (data.message || data.error || data.detail)) || text || response.statusText;
+        throw new Error(`Tiingo ${response.status}: ${String(message).slice(0, 200)}`);
+      }
 
-    return data;
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      // Handle timeout specifically
+      if (error.name === 'AbortError') {
+        throw new Error('Tiingo API request timeout (8s exceeded)');
+      }
+      throw error;
+    }
   };
 
   return tiingoResponseCache.resolve(cacheKey, loader, cacheTtl);
@@ -505,7 +529,7 @@ export async function loadIntraday(symbol, interval, limit, token) {
  * @returns {Promise<object|null>}
  */
 export async function loadIntradayLatest(symbol, token) {
-  const data = await tiingo('/iex', { tickers: symbol }, token, { cacheTtl: 10_000 });
+  const data = await tiingo('/iex', { tickers: symbol }, token, { cacheTtl: 30_000 }); // Optimized: 30s cache for real-time quotes
   const row = Array.isArray(data) ? data.find((r) => (r.ticker || r.symbol || '').toUpperCase() === symbol.toUpperCase()) : null;
 
   if (!row) return null;
@@ -964,11 +988,48 @@ async function handleTiingoRequest(request) {
   const url = new URL(request.url);
   const kind = url.searchParams.get('kind') || 'eod';
   const symbol = (url.searchParams.get('symbol') || 'AAPL').toUpperCase();
+  const symbols = url.searchParams.get('symbols'); // Support batch processing
   const interval = url.searchParams.get('interval') || '';
   const limit = Number(url.searchParams.get('limit')) || DEFAULT_EOD_POINTS;
 
   const tokenDetail = getTiingoTokenDetail();
   const token = tokenDetail.token;
+  
+  // Handle batch processing for multiple symbols
+  if (symbols) {
+    const symbolList = symbols.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
+    if (symbolList.length > 1 && symbolList.length <= 10) { // Limit to 10 symbols max
+      try {
+        const results = await Promise.all(
+          symbolList.map(async (sym) => {
+            try {
+              if (kind === 'intraday_latest') {
+                const quote = await loadIntradayLatest(sym, token);
+                return { symbol: sym, data: quote ? [quote] : [], success: true };
+              } else if (kind === 'eod') {
+                const data = await loadEod(sym, limit, token);
+                return { symbol: sym, data, success: true };
+              } else if (kind === 'overview') {
+                const data = await buildOverview(sym, token);
+                return { symbol: sym, data, success: true };
+              }
+              return { symbol: sym, data: [], success: false, error: 'Unsupported kind for batch' };
+            } catch (error) {
+              return { symbol: sym, data: [], success: false, error: error.message };
+            }
+          })
+        );
+        return ok({ 
+          symbols: symbolList, 
+          results,
+          batchProcessed: true,
+          generatedAt: new Date().toISOString()
+        }, 'batch-live', { 'cache-control': 'public, max-age=30, s-maxage=60' });
+      } catch (error) {
+        console.error('[tiingo] Batch processing error:', error);
+      }
+    }
+  }
   
   if (!token) {
     const warning = 'Tiingo API key not found. Checked standard env vars, all env vars for token-like values, and env var names.';
