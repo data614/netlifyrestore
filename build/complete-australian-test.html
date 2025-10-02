@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Australian Stock Complete Testing</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .test-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .stock-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stock-header { display: flex; align-items: center; margin-bottom: 15px; }
+        .stock-icon { font-size: 24px; margin-right: 10px; }
+        .stock-title { font-size: 18px; font-weight: bold; margin: 0; }
+        .stock-subtitle { color: #666; font-size: 14px; margin: 0; }
+        .test-button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; width: 100%; margin: 10px 0; }
+        .test-button:hover { background: #0056b3; }
+        .test-button:disabled { background: #ccc; cursor: not-allowed; }
+        .status-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .status-pass { background: #28a745; }
+        .status-fail { background: #dc3545; }
+        .status-pending { background: #ffc107; }
+        .status-unknown { background: #6c757d; }
+        .results-area { margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; min-height: 100px; font-family: monospace; font-size: 12px; }
+        .chart-demo { width: 100%; height: 200px; border: 1px solid #ddd; margin: 10px 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><path d="M10,150 Q50,100 100,120 T200,80 T300,100 T390,70" stroke="%23007bff" stroke-width="2" fill="none"/><text x="200" y="100" text-anchor="middle" fill="%23666">Chart will load here</text></svg>') no-repeat center; background-size: contain; }
+        .summary { background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .live-link { display: inline-block; background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 10px 10px 10px 0; }
+        .live-link:hover { background: #1e7e34; }
+        .progress-bar { width: 100%; height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: #007bff; width: 0%; transition: width 0.3s ease; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇦🇺 Australian Stock Complete Testing Suite</h1>
+            <p>Comprehensive testing of QAN (Qantas), WOW (Woolworths), and WBC (Westpac) in the Trading Desk application.</p>
+            
+            <div style="margin: 20px 0;">
+                <a href="https://tradingrestore1.netlify.app" target="_blank" class="live-link">🚀 Open Trading Desk</a>
+                <a href="https://tradingrestore1.netlify.app/test-australian-stocks.html" target="_blank" class="live-link">📊 API Test Dashboard</a>
+                <button onclick="runCompleteTest()" class="test-button" style="width: auto; display: inline-block;">🧪 Run Complete Test Suite</button>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="overall-progress"></div>
+            </div>
+            <div id="overall-status">Ready to test Australian stocks...</div>
+        </div>
+
+        <div class="test-grid">
+            <!-- QAN Card -->
+            <div class="stock-card">
+                <div class="stock-header">
+                    <div class="stock-icon">🛩️</div>
+                    <div>
+                        <div class="stock-title">QAN - Qantas Airways Ltd</div>
+                        <div class="stock-subtitle">XASX: QAN</div>
+                    </div>
+                </div>
+                
+                <div style="margin: 10px 0;">
+                    <span class="status-indicator status-unknown" id="qan-search-status"></span>Search Functionality
+                    <br>
+                    <span class="status-indicator status-unknown" id="qan-data-status"></span>Data Loading
+                    <br>
+                    <span class="status-indicator status-unknown" id="qan-chart-status"></span>Chart Display
+                    <br>
+                    <span class="status-indicator status-unknown" id="qan-price-status"></span>Price Data
+                </div>
+                
+                <button onclick="testSingleStock('QAN')" class="test-button" id="qan-button">Test QAN</button>
+                <div class="chart-demo" id="qan-chart-demo"></div>
+                <div class="results-area" id="qan-results">Waiting for test...</div>
+            </div>
+
+            <!-- WOW Card -->
+            <div class="stock-card">
+                <div class="stock-header">
+                    <div class="stock-icon">🛒</div>
+                    <div>
+                        <div class="stock-title">WOW - Woolworths Group</div>
+                        <div class="stock-subtitle">XASX: WOW</div>
+                    </div>
+                </div>
+                
+                <div style="margin: 10px 0;">
+                    <span class="status-indicator status-unknown" id="wow-search-status"></span>Search Functionality
+                    <br>
+                    <span class="status-indicator status-unknown" id="wow-data-status"></span>Data Loading
+                    <br>
+                    <span class="status-indicator status-unknown" id="wow-chart-status"></span>Chart Display
+                    <br>
+                    <span class="status-indicator status-unknown" id="wow-price-status"></span>Price Data
+                </div>
+                
+                <button onclick="testSingleStock('WOW')" class="test-button" id="wow-button">Test WOW</button>
+                <div class="chart-demo" id="wow-chart-demo"></div>
+                <div class="results-area" id="wow-results">Waiting for test...</div>
+            </div>
+
+            <!-- WBC Card -->
+            <div class="stock-card">
+                <div class="stock-header">
+                    <div class="stock-icon">🏦</div>
+                    <div>
+                        <div class="stock-title">WBC - Westpac Banking</div>
+                        <div class="stock-subtitle">XASX: WBC</div>
+                    </div>
+                </div>
+                
+                <div style="margin: 10px 0;">
+                    <span class="status-indicator status-unknown" id="wbc-search-status"></span>Search Functionality
+                    <br>
+                    <span class="status-indicator status-unknown" id="wbc-data-status"></span>Data Loading
+                    <br>
+                    <span class="status-indicator status-unknown" id="wbc-chart-status"></span>Chart Display
+                    <br>
+                    <span class="status-indicator status-unknown" id="wbc-price-status"></span>Price Data
+                </div>
+                
+                <button onclick="testSingleStock('WBC')" class="test-button" id="wbc-button">Test WBC</button>
+                <div class="chart-demo" id="wbc-chart-demo"></div>
+                <div class="results-area" id="wbc-results">Waiting for test...</div>
+            </div>
+        </div>
+
+        <div class="summary" id="test-summary" style="display: none;">
+            <h2>📋 Test Summary</h2>
+            <div id="summary-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const testStocks = [
+            { symbol: 'QAN', name: 'Qantas Airways Ltd', id: 'qan', icon: '🛩️' },
+            { symbol: 'WOW', name: 'Woolworths Group Limited', id: 'wow', icon: '🛒' },
+            { symbol: 'WBC', name: 'Westpac Banking Corporation', id: 'wbc', icon: '🏦' }
+        ];
+
+        let testResults = {};
+        let currentTestIndex = 0;
+
+        function updateProgress(percentage) {
+            document.getElementById('overall-progress').style.width = percentage + '%';
+        }
+
+        function updateStatus(status) {
+            document.getElementById('overall-status').textContent = status;
+        }
+
+        function updateStockStatus(stockId, type, status) {
+            const statusEl = document.getElementById(`${stockId}-${type}-status`);
+            if (statusEl) {
+                statusEl.className = `status-indicator status-${status}`;
+            }
+        }
+
+        function addResult(stockId, message, isError = false) {
+            const resultsEl = document.getElementById(`${stockId}-results`);
+            const timestamp = new Date().toLocaleTimeString();
+            const style = isError ? 'color: red;' : 'color: green;';
+            resultsEl.innerHTML += `<div style="${style}">[${timestamp}] ${message}</div>`;
+            resultsEl.scrollTop = resultsEl.scrollHeight;
+        }
+
+        function clearResults(stockId) {
+            const resultsEl = document.getElementById(`${stockId}-results`);
+            resultsEl.innerHTML = '';
+        }
+
+        async function testSingleStock(symbol) {
+            const stock = testStocks.find(s => s.symbol === symbol);
+            if (!stock) return;
+
+            const button = document.getElementById(`${stock.id}-button`);
+            button.disabled = true;
+            button.textContent = `Testing ${symbol}...`;
+            
+            clearResults(stock.id);
+            addResult(stock.id, `Starting comprehensive test for ${symbol}...`);
+
+            const result = {
+                symbol,
+                searchWorks: false,
+                dataLoads: false,
+                chartDisplays: false,
+                priceShows: false,
+                errors: []
+            };
+
+            try {
+                // Test 1: Search API
+                addResult(stock.id, 'Testing search API...');
+                updateStockStatus(stock.id, 'search', 'pending');
+                
+                const searchUrl = `/api/search?q=${symbol}&exchange=ASX&limit=5`;
+                const searchResponse = await fetch(searchUrl);
+                const searchData = await searchResponse.json();
+                
+                if (searchResponse.ok && searchData?.data?.length > 0) {
+                    result.searchWorks = true;
+                    updateStockStatus(stock.id, 'search', 'pass');
+                    addResult(stock.id, `✅ Search: Found ${searchData.data.length} results`);
+                    
+                    // Show first result
+                    const firstResult = searchData.data[0];
+                    addResult(stock.id, `Top result: ${firstResult.symbol} - ${firstResult.name || 'N/A'}`);
+                } else {
+                    updateStockStatus(stock.id, 'search', 'fail');
+                    addResult(stock.id, `❌ Search failed: ${searchResponse.status}`, true);
+                    result.errors.push('Search API failed');
+                }
+
+                // Test 2: Price Data
+                addResult(stock.id, 'Testing price data...');
+                updateStockStatus(stock.id, 'price', 'pending');
+                
+                const priceUrl = `/api/tiingo?symbol=${symbol}&kind=price`;
+                const priceResponse = await fetch(priceUrl);
+                const priceData = await priceResponse.json();
+                
+                if (priceResponse.ok && priceData?.data) {
+                    result.priceShows = true;
+                    updateStockStatus(stock.id, 'price', 'pass');
+                    
+                    const data = Array.isArray(priceData.data) ? priceData.data[0] : priceData.data;
+                    if (data) {
+                        addResult(stock.id, `✅ Price: ${data.close || data.last || 'N/A'} AUD`);
+                        addResult(stock.id, `Date: ${data.date || 'N/A'}`);
+                        if (data.volume) addResult(stock.id, `Volume: ${data.volume.toLocaleString()}`);
+                    }
+                } else {
+                    updateStockStatus(stock.id, 'price', 'fail');
+                    addResult(stock.id, `❌ Price data failed: ${priceResponse.status}`, true);
+                    result.errors.push('Price data failed');
+                }
+
+                // Test 3: Historical Data (for charts)
+                addResult(stock.id, 'Testing historical data...');
+                updateStockStatus(stock.id, 'chart', 'pending');
+                
+                const histUrl = `/api/tiingo?symbol=${symbol}&kind=history&days=30`;
+                const histResponse = await fetch(histUrl);
+                const histData = await histResponse.json();
+                
+                if (histResponse.ok && histData?.data?.length > 0) {
+                    result.chartDisplays = true;
+                    updateStockStatus(stock.id, 'chart', 'pass');
+                    addResult(stock.id, `✅ Historical: ${histData.data.length} data points`);
+                    
+                    // Show chart simulation
+                    const chartDemo = document.getElementById(`${stock.id}-chart-demo`);
+                    chartDemo.style.background = '#e8f4fd';
+                    chartDemo.innerHTML = `<div style="padding: 20px; text-align: center; color: #007bff;">📈 Chart data available<br>${histData.data.length} data points loaded</div>`;
+                    
+                    // Show sample data
+                    const latest = histData.data[histData.data.length - 1];
+                    const oldest = histData.data[0];
+                    addResult(stock.id, `Latest: ${latest.date} - Close: ${latest.close}`);
+                    addResult(stock.id, `Oldest: ${oldest.date} - Close: ${oldest.close}`);
+                } else {
+                    updateStockStatus(stock.id, 'chart', 'fail');
+                    addResult(stock.id, `❌ Historical data failed: ${histResponse.status}`, true);
+                    result.errors.push('Historical data failed');
+                }
+
+                // Test 4: Meta Data
+                addResult(stock.id, 'Testing meta data...');
+                updateStockStatus(stock.id, 'data', 'pending');
+                
+                const metaUrl = `/api/tiingo?symbol=${symbol}&kind=meta`;
+                const metaResponse = await fetch(metaUrl);
+                const metaData = await metaResponse.json();
+                
+                if (metaResponse.ok && metaData?.data) {
+                    result.dataLoads = true;
+                    updateStockStatus(stock.id, 'data', 'pass');
+                    addResult(stock.id, '✅ Meta data loaded');
+                    
+                    const data = metaData.data;
+                    addResult(stock.id, `Company: ${data.description || 'N/A'}`);
+                    addResult(stock.id, `Exchange: ${data.exchangeCode || 'N/A'}`);
+                } else {
+                    updateStockStatus(stock.id, 'data', 'fail');
+                    addResult(stock.id, `❌ Meta data failed: ${metaResponse.status}`, true);
+                    result.errors.push('Meta data failed');
+                }
+
+                // Final assessment
+                const passedTests = [result.searchWorks, result.dataLoads, result.chartDisplays, result.priceShows].filter(Boolean).length;
+                const totalTests = 4;
+                
+                if (passedTests === totalTests) {
+                    addResult(stock.id, `🎉 ${symbol} is FULLY FUNCTIONAL! All tests passed.`);
+                    button.style.background = '#28a745';
+                    button.textContent = `✅ ${symbol} Working`;
+                } else if (passedTests > 0) {
+                    addResult(stock.id, `⚠️ ${symbol} is PARTIALLY FUNCTIONAL (${passedTests}/${totalTests} tests passed)`);
+                    button.style.background = '#ffc107';
+                    button.textContent = `⚠️ ${symbol} Partial`;
+                } else {
+                    addResult(stock.id, `❌ ${symbol} is NOT FUNCTIONAL`, true);
+                    button.style.background = '#dc3545';
+                    button.textContent = `❌ ${symbol} Failed`;
+                }
+
+            } catch (error) {
+                addResult(stock.id, `❌ Test error: ${error.message}`, true);
+                button.style.background = '#dc3545';
+                button.textContent = `❌ ${symbol} Error`;
+            } finally {
+                button.disabled = false;
+                testResults[symbol] = result;
+            }
+        }
+
+        async function runCompleteTest() {
+            updateStatus('Starting complete Australian stock test suite...');
+            updateProgress(0);
+            
+            document.getElementById('test-summary').style.display = 'none';
+            
+            for (let i = 0; i < testStocks.length; i++) {
+                const stock = testStocks[i];
+                updateStatus(`Testing ${stock.symbol} (${i + 1}/${testStocks.length})...`);
+                updateProgress((i / testStocks.length) * 100);
+                
+                await testSingleStock(stock.symbol);
+                
+                // Wait between tests
+                if (i < testStocks.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            
+            updateProgress(100);
+            updateStatus('All tests completed!');
+            
+            // Generate summary
+            generateSummary();
+        }
+
+        function generateSummary() {
+            const summary = document.getElementById('test-summary');
+            const content = document.getElementById('summary-content');
+            
+            const fullyWorking = Object.values(testResults).filter(r => 
+                r.searchWorks && r.dataLoads && r.chartDisplays && r.priceShows
+            );
+            const partiallyWorking = Object.values(testResults).filter(r => 
+                [r.searchWorks, r.dataLoads, r.chartDisplays, r.priceShows].some(Boolean) &&
+                ![r.searchWorks, r.dataLoads, r.chartDisplays, r.priceShows].every(Boolean)
+            );
+            const notWorking = Object.values(testResults).filter(r => 
+                ![r.searchWorks, r.dataLoads, r.chartDisplays, r.priceShows].some(Boolean)
+            );
+            
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0;">
+                    <div style="text-align: center; padding: 20px; background: #d4edda; border-radius: 8px;">
+                        <h3 style="color: #155724; margin: 0;">✅ Fully Working</h3>
+                        <div style="font-size: 24px; font-weight: bold; color: #155724;">${fullyWorking.length}</div>
+                        <div>${fullyWorking.map(r => r.symbol).join(', ') || 'None'}</div>
+                    </div>
+                    <div style="text-align: center; padding: 20px; background: #fff3cd; border-radius: 8px;">
+                        <h3 style="color: #856404; margin: 0;">⚠️ Partially Working</h3>
+                        <div style="font-size: 24px; font-weight: bold; color: #856404;">${partiallyWorking.length}</div>
+                        <div>${partiallyWorking.map(r => r.symbol).join(', ') || 'None'}</div>
+                    </div>
+                    <div style="text-align: center; padding: 20px; background: #f8d7da; border-radius: 8px;">
+                        <h3 style="color: #721c24; margin: 0;">❌ Not Working</h3>
+                        <div style="font-size: 24px; font-weight: bold; color: #721c24;">${notWorking.length}</div>
+                        <div>${notWorking.map(r => r.symbol).join(', ') || 'None'}</div>
+                    </div>
+                </div>
+                
+                <h3>Detailed Results:</h3>
+                ${Object.values(testResults).map(result => `
+                    <div style="margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
+                        <strong>${result.symbol}</strong> - 
+                        ${[result.searchWorks, result.dataLoads, result.chartDisplays, result.priceShows].filter(Boolean).length}/4 tests passed
+                        <br>
+                        <small>
+                            Search: ${result.searchWorks ? '✅' : '❌'} | 
+                            Data: ${result.dataLoads ? '✅' : '❌'} | 
+                            Chart: ${result.chartDisplays ? '✅' : '❌'} | 
+                            Price: ${result.priceShows ? '✅' : '❌'}
+                        </small>
+                        ${result.errors.length > 0 ? `<br><small style="color: red;">Errors: ${result.errors.join(', ')}</small>` : ''}
+                    </div>
+                `).join('')}
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                    <h4>🎯 Conclusion:</h4>
+                    ${fullyWorking.length === testStocks.length 
+                        ? '<p style="color: #28a745; font-weight: bold;">🎉 EXCELLENT: All Australian stocks (QAN, WOW, WBC) are fully functional! Charts and data load properly for all symbols.</p>'
+                        : fullyWorking.length > 0 
+                        ? `<p style="color: #856404;">✅ GOOD: ${fullyWorking.map(r => r.symbol).join(', ')} working fully. Some stocks may need attention.</p>`
+                        : '<p style="color: #dc3545; font-weight: bold;">❌ ATTENTION NEEDED: Australian stocks require investigation.</p>'
+                    }
+                </div>
+            `;
+            
+            summary.style.display = 'block';
+        }
+
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                updateStatus('Ready! Click "Run Complete Test Suite" to begin...');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

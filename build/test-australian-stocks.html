@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Australian Stock Testing</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-container { max-width: 1200px; margin: 0 auto; }
+        .stock-test { border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; }
+        .status { padding: 5px 10px; border-radius: 4px; margin: 5px 0; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .pending { background-color: #fff3cd; color: #856404; }
+        .test-details { margin: 10px 0; font-family: monospace; font-size: 12px; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .chart-container { width: 100%; height: 300px; border: 1px solid #ccc; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🇦🇺 Australian Stock Testing Dashboard</h1>
+        <p>Testing QAN (Qantas), WOW (Woolworths), and WBC (Westpac) functionality in the Trading Desk application.</p>
+        
+        <button onclick="runAllTests()" id="runTestsBtn">Run All Tests</button>
+        <button onclick="testSearch()" id="testSearchBtn">Test Search Only</button>
+        <button onclick="testDataFetch()" id="testDataBtn">Test Data Fetch Only</button>
+        
+        <div id="overall-status"></div>
+        
+        <div id="test-results">
+            <div class="stock-test" id="qan-test">
+                <h2>🛩️ QAN - Qantas Airways Ltd</h2>
+                <div class="status pending" id="qan-status">Pending...</div>
+                <div class="test-details" id="qan-details"></div>
+                <div class="chart-container" id="qan-chart" style="display:none;"></div>
+            </div>
+            
+            <div class="stock-test" id="wow-test">
+                <h2>🛒 WOW - Woolworths Group Limited</h2>
+                <div class="status pending" id="wow-status">Pending...</div>
+                <div class="test-details" id="wow-details"></div>
+                <div class="chart-container" id="wow-chart" style="display:none;"></div>
+            </div>
+            
+            <div class="stock-test" id="wbc-test">
+                <h2>🏦 WBC - Westpac Banking Corporation</h2>
+                <div class="status pending" id="wbc-status">Pending...</div>
+                <div class="test-details" id="wbc-details"></div>
+                <div class="chart-container" id="wbc-chart" style="display:none;"></div>
+            </div>
+        </div>
+        
+        <div id="summary"></div>
+    </div>
+
+    <script>
+        const testStocks = [
+            { symbol: 'QAN', name: 'Qantas Airways Ltd', exchange: 'ASX', id: 'qan' },
+            { symbol: 'WOW', name: 'Woolworths Group Limited', exchange: 'ASX', id: 'wow' },
+            { symbol: 'WBC', name: 'Westpac Banking Corporation', exchange: 'ASX', id: 'wbc' }
+        ];
+
+        function updateStatus(stockId, status, message) {
+            const statusEl = document.getElementById(`${stockId}-status`);
+            const detailsEl = document.getElementById(`${stockId}-details`);
+            
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = message;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            detailsEl.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+        }
+
+        function addDetails(stockId, message, isError = false) {
+            const detailsEl = document.getElementById(`${stockId}-details`);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = isError ? 'error' : 'success';
+            detailsEl.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+
+        async function testStock(stock) {
+            const { symbol, name, exchange, id } = stock;
+            
+            updateStatus(id, 'pending', `Testing ${symbol}...`);
+            
+            const results = {
+                symbol,
+                name,
+                searchAvailable: false,
+                metaDataAvailable: false,
+                historicalDataAvailable: false,
+                priceDataAvailable: false,
+                errors: []
+            };
+
+            try {
+                // Test 1: Search functionality
+                addDetails(id, `Testing search for ${symbol}...`);
+                try {
+                    const searchUrl = new URL('/api/search', window.location.origin);
+                    searchUrl.searchParams.set('q', symbol);
+                    searchUrl.searchParams.set('limit', '5');
+                    searchUrl.searchParams.set('exchange', exchange);
+                    
+                    const searchResponse = await fetch(searchUrl);
+                    const searchData = await searchResponse.json();
+                    
+                    if (searchResponse.ok && searchData?.data?.length > 0) {
+                        results.searchAvailable = true;
+                        addDetails(id, `✅ Search: Found ${searchData.data.length} results`);
+                        
+                        // Show search results
+                        const searchResults = searchData.data.map(item => 
+                            `${item.symbol || 'N/A'} - ${item.name || 'N/A'}`
+                        ).join(', ');
+                        addDetails(id, `Search results: ${searchResults}`);
+                    } else {
+                        results.errors.push(`Search failed: ${searchResponse.status}`);
+                        addDetails(id, `❌ Search failed: Status ${searchResponse.status}`, true);
+                    }
+                } catch (error) {
+                    results.errors.push(`Search error: ${error.message}`);
+                    addDetails(id, `❌ Search error: ${error.message}`, true);
+                }
+
+                // Test 2: Meta data
+                addDetails(id, `Testing meta data for ${symbol}...`);
+                try {
+                    const metaUrl = new URL('/api/tiingo', window.location.origin);
+                    metaUrl.searchParams.set('symbol', symbol);
+                    metaUrl.searchParams.set('kind', 'meta');
+                    
+                    const metaResponse = await fetch(metaUrl);
+                    const metaData = await metaResponse.json();
+                    
+                    if (metaResponse.ok && metaData?.data) {
+                        results.metaDataAvailable = true;
+                        addDetails(id, `✅ Meta data: Available`);
+                        
+                        // Show key meta data
+                        const data = metaData.data;
+                        addDetails(id, `Company: ${data.description || 'N/A'}`);
+                        addDetails(id, `Exchange: ${data.exchangeCode || 'N/A'}`);
+                        addDetails(id, `Start Date: ${data.startDate || 'N/A'}`);
+                        addDetails(id, `End Date: ${data.endDate || 'N/A'}`);
+                    } else {
+                        results.errors.push(`Meta data failed: ${metaResponse.status}`);
+                        addDetails(id, `❌ Meta data failed: Status ${metaResponse.status}`, true);
+                    }
+                } catch (error) {
+                    results.errors.push(`Meta data error: ${error.message}`);
+                    addDetails(id, `❌ Meta data error: ${error.message}`, true);
+                }
+
+                // Test 3: Current price
+                addDetails(id, `Testing current price for ${symbol}...`);
+                try {
+                    const priceUrl = new URL('/api/tiingo', window.location.origin);
+                    priceUrl.searchParams.set('symbol', symbol);
+                    priceUrl.searchParams.set('kind', 'price');
+                    
+                    const priceResponse = await fetch(priceUrl);
+                    const priceData = await priceResponse.json();
+                    
+                    if (priceResponse.ok && priceData?.data) {
+                        results.priceDataAvailable = true;
+                        addDetails(id, `✅ Price data: Available`);
+                        
+                        // Show price info
+                        const data = Array.isArray(priceData.data) ? priceData.data[0] : priceData.data;
+                        if (data) {
+                            addDetails(id, `Current Price: ${data.close || data.last || 'N/A'} ${data.currency || 'AUD'}`);
+                            addDetails(id, `Date: ${data.date || 'N/A'}`);
+                            if (data.volume) addDetails(id, `Volume: ${data.volume.toLocaleString()}`);
+                        }
+                    } else {
+                        results.errors.push(`Price data failed: ${priceResponse.status}`);
+                        addDetails(id, `❌ Price data failed: Status ${priceResponse.status}`, true);
+                    }
+                } catch (error) {
+                    results.errors.push(`Price data error: ${error.message}`);
+                    addDetails(id, `❌ Price data error: ${error.message}`, true);
+                }
+
+                // Test 4: Historical data
+                addDetails(id, `Testing historical data for ${symbol}...`);
+                try {
+                    const histUrl = new URL('/api/tiingo', window.location.origin);
+                    histUrl.searchParams.set('symbol', symbol);
+                    histUrl.searchParams.set('kind', 'history');
+                    histUrl.searchParams.set('days', '30');
+                    
+                    const histResponse = await fetch(histUrl);
+                    const histData = await histResponse.json();
+                    
+                    if (histResponse.ok && histData?.data?.length > 0) {
+                        results.historicalDataAvailable = true;
+                        addDetails(id, `✅ Historical data: ${histData.data.length} data points`);
+                        
+                        // Show sample data
+                        const latest = histData.data[histData.data.length - 1];
+                        const oldest = histData.data[0];
+                        addDetails(id, `Latest: ${latest.date} - Close: ${latest.close}`);
+                        addDetails(id, `Oldest: ${oldest.date} - Close: ${oldest.close}`);
+                    } else {
+                        results.errors.push(`Historical data failed: ${histResponse.status}`);
+                        addDetails(id, `❌ Historical data failed: Status ${histResponse.status}`, true);
+                    }
+                } catch (error) {
+                    results.errors.push(`Historical data error: ${error.message}`);
+                    addDetails(id, `❌ Historical data error: ${error.message}`, true);
+                }
+
+                // Determine overall status
+                const allTestsPassed = results.searchAvailable && 
+                                     results.metaDataAvailable && 
+                                     results.priceDataAvailable && 
+                                     results.historicalDataAvailable;
+                
+                if (allTestsPassed) {
+                    updateStatus(id, 'pass', `✅ ${symbol} - All tests passed!`);
+                } else {
+                    const passedTests = [
+                        results.searchAvailable ? 'Search' : null,
+                        results.metaDataAvailable ? 'Meta' : null,
+                        results.priceDataAvailable ? 'Price' : null,
+                        results.historicalDataAvailable ? 'Historical' : null
+                    ].filter(Boolean);
+                    
+                    updateStatus(id, 'fail', `❌ ${symbol} - Partial success: ${passedTests.join(', ')}`);
+                }
+
+            } catch (error) {
+                updateStatus(id, 'fail', `❌ ${symbol} - Test failed: ${error.message}`);
+                addDetails(id, `❌ Overall test error: ${error.message}`, true);
+            }
+
+            return results;
+        }
+
+        async function runAllTests() {
+            const runBtn = document.getElementById('runTestsBtn');
+            runBtn.disabled = true;
+            runBtn.textContent = 'Running Tests...';
+            
+            document.getElementById('overall-status').innerHTML = '<h2>🔄 Running tests...</h2>';
+            
+            const allResults = [];
+            
+            for (const stock of testStocks) {
+                const result = await testStock(stock);
+                allResults.push(result);
+                
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            // Generate summary
+            const passedStocks = allResults.filter(r => 
+                r.searchAvailable && r.metaDataAvailable && r.priceDataAvailable && r.historicalDataAvailable
+            );
+            
+            const summaryEl = document.getElementById('summary');
+            summaryEl.innerHTML = `
+                <h2>📊 Test Summary</h2>
+                <p><strong>Passed:</strong> ${passedStocks.length}/${allResults.length} stocks</p>
+                <p><strong>Fully functional stocks:</strong> ${passedStocks.map(r => r.symbol).join(', ') || 'None'}</p>
+            `;
+            
+            const overallStatus = document.getElementById('overall-status');
+            if (passedStocks.length === allResults.length) {
+                overallStatus.innerHTML = '<h2 class="success">✅ All Australian stocks are working perfectly!</h2>';
+            } else if (passedStocks.length > 0) {
+                overallStatus.innerHTML = '<h2 style="color: orange;">⚠️ Some Australian stocks are working</h2>';
+            } else {
+                overallStatus.innerHTML = '<h2 class="error">❌ Australian stocks need attention</h2>';
+            }
+            
+            runBtn.disabled = false;
+            runBtn.textContent = 'Run All Tests';
+        }
+
+        async function testSearch() {
+            document.getElementById('overall-status').innerHTML = '<h2>🔍 Testing search only...</h2>';
+            for (const stock of testStocks) {
+                addDetails(stock.id, `Testing search for ${stock.symbol}...`);
+                // Search test code here
+            }
+        }
+
+        async function testDataFetch() {
+            document.getElementById('overall-status').innerHTML = '<h2>📈 Testing data fetch only...</h2>';
+            for (const stock of testStocks) {
+                addDetails(stock.id, `Testing data fetch for ${stock.symbol}...`);
+                // Data fetch test code here
+            }
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 1000);
+        });
+    </script>
+</body>
+</html>

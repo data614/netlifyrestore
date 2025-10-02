@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Good Hope Desk - Home</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="app.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>Good Hope Desk</h1>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/ai-analyst">AI Analyst</a></li>
+                <li><a href="/quant-screener">Quant Screener</a></li>
+                <li><a href="/professional-desk.html">Professional Desk</a></li>
+                <li><a href="/valuation-lab.html">Valuation Lab</a></li>
+                <li><a href="/api-test">API Test</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h2>Welcome to Good Hope Desk</h2>
+            <p>Your comprehensive financial trading and analysis platform</p>
+        </section>
+
+        <section class="features">
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>AI Analyst</h3>
+                    <p>Advanced AI-powered market analysis and insights</p>
+                    <a href="/ai-analyst" class="btn">Get Started</a>
+                </div>
+
+                <div class="feature-card">
+                    <h3>Quant Screener</h3>
+                    <p>Quantitative screening tools for stock analysis</p>
+                    <a href="/quant-screener" class="btn">Screen Stocks</a>
+                </div>
+
+                <div class="feature-card">
+                    <h3>Professional Desk</h3>
+                    <p>Professional trading tools and real-time data</p>
+                    <a href="/professional-desk.html" class="btn">Trade Now</a>
+                </div>
+
+                <div class="feature-card">
+                    <h3>Valuation Lab</h3>
+                    <p>Advanced valuation models and analysis</p>
+                    <a href="/valuation-lab.html" class="btn">Analyze</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="api-status">
+            <h3>System Status</h3>
+            <div id="api-status">
+                <p>Checking Tiingo API connection...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Good Hope Desk. All rights reserved.</p>
+    </footer>
+
+    <script src="app.js"></script>
+    <script>
+        // Quick API health check
+        async function checkApiStatus() {
+            try {
+                const response = await fetch('/api/tiingo?symbol=AAPL&kind=eod&limit=1');
+                const statusDiv = document.getElementById('api-status');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const fallback = response.headers.get('x-tiingo-fallback');
+                    
+                    if (fallback === 'mock') {
+                        statusDiv.innerHTML = '<p style="color: orange;">⚠️ API running in mock mode - check environment variables</p>';
+                    } else {
+                        statusDiv.innerHTML = '<p style="color: green;">✅ Tiingo API connected successfully</p>';
+                    }
+                } else {
+                    statusDiv.innerHTML = '<p style="color: red;">❌ API connection failed</p>';
+                }
+            } catch (error) {
+                const statusDiv = document.getElementById('api-status');
+                statusDiv.innerHTML = '<p style="color: red;">❌ API connection error</p>';
+            }
+        }
+        
+        // Check API status when page loads
+        document.addEventListener('DOMContentLoaded', checkApiStatus);
+    </script>
+</body>
+</html>
