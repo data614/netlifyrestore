@@ -1,17 +1,11 @@
 import {
-  loadEod as loadEodLive,
-  loadFundamentals as loadFundamentalsLive,
-  loadCompanyOverview,
-  loadCompanyNews,
-  loadCompanyDocuments,
-  loadCorporateActions,
-  loadIntraday as loadIntradayLive,
-  loadIntradayLatest as loadIntradayLatestLive,
-  loadFinancialStatements,
-  loadSecFilings,
-  loadValuation,
-  __private,
-} from './tiingo-data-backup.js';
+  loadEod,
+  loadFundamentals,
+  loadNews as loadCompanyNews,
+  loadDocuments as loadCompanyDocuments,
+  loadActions as loadCorporateActions,
+  loadIntradayLatest,
+} from './tiingo-data.js';
 
 const BASE_PRICE_MAP = {
   AAPL: 258.0,
@@ -465,12 +459,8 @@ export async function handler(event) {
 
 export default handler;
 
-export const loadEod = (symbol, limit, token) => loadEodLive(symbol, limit, token);
-export const loadIntraday = (symbol, interval, limit, token) => loadIntradayLive(symbol, interval, limit, token);
-export const loadIntradayLatest = (symbol, token) => loadIntradayLatestLive(symbol, token);
-export const loadFundamentals = (symbol, token, limit) => loadFundamentalsLive(symbol, token, limit);
-
-export { loadCompanyOverview, loadCompanyNews, loadCompanyDocuments, loadCorporateActions, loadFinancialStatements, loadSecFilings, loadValuation, __private };
+// Updated to use simplified tiingo-data.js exports
+export { loadEod, loadFundamentals, loadIntradayLatest };
 
 export async function loadNews(symbol, token, limit = 12) {
   return loadCompanyNews(symbol, limit, token);
