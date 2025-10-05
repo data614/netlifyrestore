@@ -1,0 +1,28 @@
+{
+    "files.associations": {
+        "*.js": "javascript",
+        "*.mjs": "javascript",
+        "*.html": "html"
+    },
+    "emmet.includeLanguages": {
+        "javascript": "javascriptreact"
+    },
+    "terminal.integrated.env.windows": {
+        "TIINGO_KEY": "aab69a760ed80b5c6c84a5a6f5e76423b3828b90"
+    },
+    "terminal.integrated.env.linux": {
+        "TIINGO_KEY": "aab69a760ed80b5c6c84a5a6f5e76423b3828b90"
+    },
+    "terminal.integrated.env.osx": {
+        "TIINGO_KEY": "aab69a760ed80b5c6c84a5a6f5e76423b3828b90"
+    },
+    "rest-client.environmentVariables": {
+        "local": {
+            "baseUrl": "http://localhost:8888",
+            "tiingoKey": "aab69a760ed80b5c6c84a5a6f5e76423b3828b90"
+        }
+    },
+    "netlify.env": {
+        "TIINGO_KEY": "aab69a760ed80b5c6c84a5a6f5e76423b3828b90"
+    }
+}
