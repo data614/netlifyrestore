@@ -219,17 +219,17 @@ function showError(msg) {
 }
 
 /* Formatting */
-const fmt = (n) => (Number.isFinite(Number(n)) ? Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â');
-const fmtVol = (n) => (Number.isFinite(Number(n)) ? Number(n).toLocaleString() : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â');
+const fmt = (n) => (Number.isFinite(Number(n)) ? Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—');
+const fmtVol = (n) => (Number.isFinite(Number(n)) ? Number(n).toLocaleString() : '—');
 const fmtPct = (n) => {
   const num = Number(n);
-  if (!Number.isFinite(num)) return 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+  if (!Number.isFinite(num)) return '—';
   const sign = num >= 0 ? '+' : '';
   return `${sign}${Math.abs(num).toFixed(2)}%`;
 };
 
 /* API wrapper */
-const API = '/api';
+const API = '/.netlify/functions';
 const tiingoRequestCache = createMonitoredCache('tiingo', { ttl: 45000, maxEntries: 120 }); // Increased from 30s to 45s, more entries
 const searchResultCache = createMonitoredCache('search', { ttl: 300000, maxEntries: 200 }); // Increased from 2min to 5min
 const newsRequestCache = createMonitoredCache('news', { ttl: 8 * 60 * 1000, maxEntries: 24 }); // Increased from 5min to 8min
@@ -383,7 +383,7 @@ async function callTiingo(params, options = {}) {
     }
     requestTracker.fail(enhanced);
     appMonitor.trackError(enhanced, 'tiingo.request', { key, params });
-    // ensure bad entries arenÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢t retained
+    // ensure bad entries aren't retained
     tiingoRequestCache.delete(key);
     throw enhanced;
   } finally {
@@ -460,7 +460,7 @@ const DEFAULT_WATCHLIST = [
   { symbol: 'CSL', name: 'CSL Limited', mic: 'XASX', exchange: 'ASX' },
   { symbol: 'WES', name: 'Wesfarmers Ltd', mic: 'XASX', exchange: 'ASX' },
 ];
-const SEARCH_PLACEHOLDER = 'Start typing to searchÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦';
+const SEARCH_PLACEHOLDER = 'Start typing to search...';
 
 function sma(values, windowSize) {
   const w = Math.max(1, Math.min(windowSize || 1, values.length));
@@ -570,8 +570,8 @@ function renderWatchlistNow() {
     row.dataset.key = key;
     const stats = watchlistQuotes.get(key);
     const exchange = (stats?.exchange || item.mic || item.exchange || '').toUpperCase();
-    const price = stats ? fmt(stats.price) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
-    const pct = stats ? fmtPct(stats.changePct) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+    const price = stats ? fmt(stats.price) : '';
+    const pct = stats ? fmtPct(stats.changePct) : '';
     const changeClass = stats ? (stats.changeAbs >= 0 ? 'positive-change' : 'negative-change') : 'muted';
     const asOf = stats?.asOf ? new Date(stats.asOf).toLocaleString() : '';
     
@@ -671,7 +671,7 @@ function updateApiBadge(meta = {}) {
     ? `Using ${meta.chosenKey}`
     : preview
       ? 'Tiingo token detected'
-      : 'Tiingo token not configured ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â using fallback data';
+      : 'Tiingo token not configured ';
   badge.classList.remove('chip-warning', 'chip-live');
   if ((meta.source || '').toLowerCase() === 'live') {
     badge.classList.add('chip-live');
@@ -698,7 +698,7 @@ function updateChartStatus(meta = {}, warning = '', count = 0) {
   } else if (source) {
     parts.push(source.replace(/-/g, ' '));
   } else {
-    parts.push('Awaiting market dataÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦');
+    parts.push('Awaiting market data');
     css += ' warning';
   }
   if (count) {
@@ -710,7 +710,7 @@ function updateChartStatus(meta = {}, warning = '', count = 0) {
   if (warning) {
     parts.push(warning);
   }
-  el.textContent = parts.join(' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ') || 'Awaiting market dataÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦';
+  el.textContent = parts.join(' ') || 'Awaiting market data';
   el.className = css;
   el.title = meta.chosenKey ? `Source key: ${meta.chosenKey}` : '';
 }
@@ -953,7 +953,7 @@ function formatRelativeTime(iso) {
   if (Number.isNaN(date.getTime())) return '';
   const diffMs = Date.now() - date.getTime();
   const diffMinutes = Math.round(diffMs / 60000);
-  if (diffMinutes <= 1) return 'just now';
+  if (diffMinutes <= 1) return '';
   if (diffMinutes < 60) return `${diffMinutes} min ago`;
   const diffHours = Math.round(diffMinutes / 60);
   if (diffHours < 24) return `${diffHours} hr${diffHours === 1 ? '' : 's'} ago`;
@@ -977,7 +977,7 @@ function renderNewsArticles(container, articles, source) {
       if (relative) metaParts.push(relative);
       item.innerHTML = `
         <a href="${article.url}" target="_blank" rel="noopener">${article.title}</a>
-        <small>${metaParts.join(' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ')}</small>
+        <small>${metaParts.join(' ')}</small>
       `;
       fragment.appendChild(item);
     });
@@ -1007,7 +1007,7 @@ async function loadNews(source = 'All') {
   newsRequestCache.delete(cacheKey);
   const controller = new AbortController();
   newsAbortController = controller;
-  feed.innerHTML = '<div class="muted">Loading newsÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦</div>';
+  feed.innerHTML = '<div class="muted">Loading news';
 
   try {
     const { cancelled, result: payload } = await runLatestNewsTask(async () => {
@@ -1154,7 +1154,7 @@ function mapDividendEvent(dividend, symbol) {
     tag: EVENT_TYPE_LABELS.dividend,
     title,
     summary: '',
-    details: detailsParts.join(' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· '),
+    details: detailsParts.join(' '),
     url: '',
     timestamp: iso,
     timeValue: ms,
@@ -1184,7 +1184,7 @@ function mapSplitEvent(split, symbol) {
     tag: EVENT_TYPE_LABELS.split,
     title,
     summary: '',
-    details: detailsParts.join(' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· '),
+    details: detailsParts.join(' '),
     url: '',
     timestamp: iso,
     timeValue: ms,
@@ -1202,7 +1202,7 @@ function summariseEventStatus(sources = [], warnings = [], errors = [], count = 
   const hasFallback = normalizedSources.some((src) => src !== 'mock' && src !== 'live');
   const cleanWarnings = [...new Set((warnings || []).filter(Boolean).map((msg) => String(msg)))];
   const cleanErrors = [...new Set((errors || []).filter(Boolean).map((msg) => String(msg)))];
-  let text = 'Events: ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+  let text = 'Events: ';
   if (hasMock) {
     text = 'Events: Sample';
   } else if (hasFallback) {
@@ -1219,7 +1219,7 @@ function summariseEventStatus(sources = [], warnings = [], errors = [], count = 
   return {
     text,
     className,
-    title: titleParts.join(' ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ '),
+    title: titleParts.join(' '),
     warnings: cleanWarnings,
     errors: cleanErrors,
   };
@@ -1229,7 +1229,7 @@ function updateEventFeedBadge(status = {}) {
   const badge = $('eventFeedBadge');
   if (!badge) return;
   scheduleEventFeedRender(() => {
-    badge.textContent = status.text || 'Events: ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+    badge.textContent = status.text || 'Events: ';
     const nextClass = typeof status.className === 'string' && status.className.includes('chip')
       ? status.className
       : `chip${status.className ? ` ${status.className}` : ''}`;
@@ -1250,7 +1250,7 @@ function renderEventFeed(container, items = [], status = {}) {
     if (alerts.length) {
       const warningEl = document.createElement('div');
       warningEl.className = 'event-feed-warning';
-      warningEl.textContent = alerts.join(' ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ');
+      warningEl.textContent = alerts.join(' ');
       fragment.appendChild(warningEl);
     }
     const validItems = Array.isArray(items) ? items.filter(Boolean) : [];
@@ -1295,12 +1295,12 @@ function renderEventFeed(container, items = [], status = {}) {
         const absolute = formatEventDateTime(event.timestamp);
         const relative = formatRelativeTime(event.timestamp);
         if (absolute) {
-          metaParts.push(relative ? `${absolute} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${relative}` : absolute);
+          metaParts.push(relative ? `${absolute} 
         }
       }
       if (metaParts.length) {
         const meta = document.createElement('span');
-        meta.textContent = metaParts.join(' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ');
+        meta.textContent = metaParts.join(' ');
         header.appendChild(meta);
       }
       item.appendChild(header);
@@ -1343,7 +1343,7 @@ async function loadEventFeed(symbol) {
   eventFeedSymbolInFlight = target;
   const requestToken = eventFeedLoadTokens.next();
 
-  const cacheKey = `events:${target}`;
+  const cacheKey = 'events:' + target;
   const cached = eventFeedCache.get(cacheKey);
   if (cached) {
     if (!eventFeedLoadTokens.isCurrent(requestToken) || eventFeedSymbolInFlight !== target) return;
@@ -1352,9 +1352,9 @@ async function loadEventFeed(symbol) {
     return;
   }
 
-  updateEventFeedBadge({ text: 'Events: LoadingÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦', className: 'chip' });
+  updateEventFeedBadge({ text: 'Events: Loading', className: 'chip' });
   scheduleEventFeedRender(() => {
-    container.innerHTML = '<div class="event-feed-empty">Loading eventsÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦</div>';
+    container.innerHTML = '<div class="event-feed-empty">Loading events';
   });
 
   try {
@@ -1487,11 +1487,11 @@ async function sendWatchlistSummary() {
   const universe = watchlist.length ? watchlist : DEFAULT_WATCHLIST;
   const lines = universe.map((item) => {
     const stats = watchlistQuotes.get(getWatchlistKey(item));
-    const price = stats ? fmt(stats.price) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
-    const pct = stats ? fmtPct(stats.changePct) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+    const price = stats ? fmt(stats.price) : '';
+    const pct = stats ? fmtPct(stats.changePct) : '';
     return `${item.symbol} ${price} (${pct})`;
   });
-  statusEl.textContent = 'Sending summaryÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦';
+  statusEl.textContent = 'Sending summary';
   statusEl.className = 'status-msg';
   btn.disabled = true;
   try {
@@ -1560,7 +1560,7 @@ function setSearchLoading() {
   if (!searchResultsEl) return;
   scheduleSearchRender(() => {
     if (!searchResultsEl) return;
-    searchResultsEl.innerHTML = '<div class="search-loading">SearchingÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦</div>';
+    searchResultsEl.innerHTML = '<div class="search-loading">Searching';
   });
 }
 
@@ -1585,7 +1585,7 @@ function renderSearchResults(items) {
       // Format as "WOW:ASX" instead of "WOW:XASX" - remove X prefix when it exists
       const cleanMic = mic.startsWith('X') ? mic.substring(1) : mic;
       const displaySymbol = cleanMic ? `${symbol}:${cleanMic}` : symbol;
-      const meta = [type, country].filter(Boolean).join(' ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ');
+      const meta = [type, country].filter(Boolean).join(' ');
 
       const row = document.createElement('div');
       row.className = 'search-result-item';
@@ -1612,7 +1612,7 @@ function renderSearchResults(items) {
 async function performSearch(query) {
   const q = query.trim();
   if (q.length < 2) {
-    clearSearchResults('Keep typing to searchÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦');
+    clearSearchResults('Keep typing to search...');
     return;
   }
 
@@ -1772,8 +1772,8 @@ function updateRangeStats(rows) {
     if (Number.isFinite(l)) lows.push(l);
   });
   if (!highs.length || !lows.length) {
-    $('stat52wHigh').textContent = 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
-    $('stat52wLow').textContent = 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+    $('stat52wHigh').textContent = '';
+    $('stat52wLow').textContent = '';
     return;
   }
   $('stat52wHigh').textContent = fmt(Math.max(...highs));
@@ -1842,7 +1842,7 @@ async function loadChartEventsForSymbol(symbol) {
           type: 'earnings',
           date: dateKey,
           title: row?.period ? `${meta.label} ${row.period}` : meta.label,
-          description: details.join(' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· '),
+          description: details.join(' '),
           style: meta,
         });
       });
@@ -1879,7 +1879,7 @@ async function loadChartEventsForSymbol(symbol) {
           type: 'dividend',
           date: dateKey,
           title: meta.label,
-          description: Number.isFinite(amount) ? `Ex-Date ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ${fmt(amount)}` : 'Ex-Date',
+          description: Number.isFinite(amount) ? `Ex-Date 'Ex-Date',
           style: meta,
         });
       });
@@ -1930,13 +1930,13 @@ function updateTimeframeButtons(activeTf) {
 
 function renderQuote(q) {
   if (!q) {
-    $('stockPrice').textContent = 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
-    $('stockChange').textContent = 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+    $('stockPrice').textContent = '';
+    $('stockChange').textContent = '';
     $('stockChange').className = 'stock-change';
-    $('statOpen').textContent = 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
-    $('statHigh').textContent = 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
-    $('statLow').textContent = 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
-    $('statVolume').textContent = 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+    $('statOpen').textContent = '';
+    $('statHigh').textContent = '';
+    $('statLow').textContent = '';
+    $('statVolume').textContent = '';
     return;
   }
   const price = q.close ?? q.last ?? q.price;
@@ -2025,7 +2025,7 @@ function renderChart(rows, intraday, events = []) {
       y: value,
       events: eventList,
       style,
-      label: eventList.map((evt) => evt.title).join(' ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ '),
+      label: eventList.map((evt) => evt.title).join(' '),
     };
   });
 
@@ -2361,3 +2361,14 @@ if (typeof document !== 'undefined' && document?.addEventListener) {
     });
   }, { once: true });
 }
+
+
+
+
+
+
+
+
+
+
+

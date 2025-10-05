@@ -1,12 +1,10 @@
 import { getTiingoToken, TIINGO_TOKEN_ENV_KEYS } from './lib/env.js';
 import {
-  loadValuation,
-  loadCompanyOverview,
-  loadCompanyNews,
-  loadCompanyDocuments,
-  loadCorporateActions,
   loadEod,
-  __private as tiingoMock,
+  loadNews,
+  loadDocuments,
+  loadActions,
+  loadFundamentals,
 } from './tiingo.js';
 import buildValuationSnapshot, { summarizeValuationNarrative } from './lib/valuation.js';
 import { logError } from './lib/security.js';
@@ -155,77 +153,58 @@ export async function gatherSymbolIntel(symbol, { limit = 120, timeframe = '3M' 
   let warning = '';
 
   if (!token) {
-    const fundamentals = tiingoMock.mockFundamentals(upper);
-    const overview = tiingoMock.mockOverview(upper);
-    const valuation = buildValuationSnapshot({
-      price: fundamentals.metrics.price,
-      earningsPerShare: fundamentals.metrics.earningsPerShare,
-      revenuePerShare: fundamentals.metrics.revenuePerShare,
-      freeCashFlowPerShare: fundamentals.metrics.freeCashFlowPerShare,
-      bookValuePerShare: fundamentals.metrics.bookValuePerShare,
-      revenueGrowth: fundamentals.metrics.revenueGrowth,
-      epsGrowth: fundamentals.metrics.epsGrowth,
-      fcfGrowth: fundamentals.metrics.fcfGrowth,
-    });
-    const news = tiingoMock.mockNews(upper, 6);
-    const documents = tiingoMock.mockDocuments(upper, 4).map(formatDocument);
-    const actions = tiingoMock.mockActions(upper);
-    const timeline = buildTimeline(upper, news, actions);
-    const priceSeries = tiingoMock.mockSeries(upper, Math.min(limit, 150), 'eod');
     return {
       symbol: upper,
-      valuation: {
-        symbol: upper,
-        price: fundamentals.metrics.price,
-        fundamentals,
-        valuation,
-        narrative: summarizeValuationNarrative(upper, valuation),
-      },
-      news,
-      documents,
-      actions,
-      timeline,
-      trend: priceSeries,
-      overview,
-      aiSummary: buildChatGpt5Summary(upper, {
-        valuation: {
-          symbol: upper,
-          price: fundamentals.metrics.price,
-          valuation,
-          narrative: summarizeValuationNarrative(upper, valuation),
-        },
-        news,
-        documents,
-        trend: priceSeries,
-      }),
-      generatedAt: new Date().toISOString(),
+      valuation: null,
+      news: [],
+      documents: [],
+      actions: {},
+      timeline: [],
+      trend: [],
+      overview: null,
+      aiSummary: null,
       warning: 'Tiingo API key missing. Showing simulated intelligence.',
     };
   }
 
-  const [valuation, news, documents, actions, trend, overview] = await Promise.all([
-    loadValuation(upper, token),
-    loadCompanyNews(upper, 12, token).catch(() => []),
-    loadCompanyDocuments(upper, 8, token).catch(() => []),
-    loadCorporateActions(upper, token).catch(() => ({})),
+  const [fundamentals, news, documents, actions, trend] = await Promise.all([
+    loadFundamentals(upper, token).catch(() => null),
+    loadNews(upper, token, 12).catch(() => []),
+    loadDocuments(upper, token, 8).catch(() => []),
+    loadActions(upper, token).catch(() => ({})),
     loadEod(upper, limit, token).catch(() => []),
-    loadCompanyOverview(upper, token).catch(() => null),
   ]);
 
   if (!news.length) warning = 'No recent news from Tiingo. Check symbol coverage.';
+
+  // Build valuation from fundamentals data if available
+  const valuation = fundamentals ? buildValuationSnapshot({
+    symbol: upper,
+    price: trend.length > 0 ? trend[trend.length - 1].price : null,
+    earningsPerShare: fundamentals.earningsPerShare,
+    revenuePerShare: fundamentals.revenuePerShare,
+    freeCashFlowPerShare: fundamentals.freeCashFlowPerShare,
+    bookValuePerShare: fundamentals.bookValuePerShare,
+  }) : null;
 
   const timeline = buildTimeline(upper, news, actions);
 
   return {
     symbol: upper,
-    valuation,
+    valuation: valuation ? {
+      symbol: upper,
+      price: trend.length > 0 ? trend[trend.length - 1].price : null,
+      fundamentals,
+      valuation,
+      narrative: summarizeValuationNarrative(upper, valuation),
+    } : null,
     news,
     documents: documents.map(formatDocument),
     actions,
     timeline,
     trend,
-    overview: overview || undefined,
-    aiSummary: buildChatGpt5Summary(upper, { valuation, news, documents, trend }),
+    overview: null,
+    aiSummary: valuation ? buildChatGpt5Summary(upper, { valuation, news, documents, trend }) : null,
     generatedAt: new Date().toISOString(),
     warning,
   };

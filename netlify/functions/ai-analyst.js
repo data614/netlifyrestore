@@ -1,4 +1,4 @@
-import handleTiingoRequest from './tiingo.js';
+import { handler as handleTiingoRequest } from './tiingo.js';
 import { createCache } from './lib/cache.js';
 import { logError } from './lib/security.js';
 import { summarizeValuationNarrative } from './lib/valuation.js';
