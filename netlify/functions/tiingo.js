@@ -465,25 +465,21 @@ export async function handler(event) {
 
 export default handler;
 
-// Re-export the main functions from tiingo-data.js
-export { loadEod, loadFundamentals, loadIntradayLatest, loadNews, loadDocuments, loadActions };
+export const loadEod = (symbol, limit, token) => loadEodLive(symbol, limit, token);
+export const loadIntraday = (symbol, interval, limit, token) => loadIntradayLive(symbol, interval, limit, token);
+export const loadIntradayLatest = (symbol, token) => loadIntradayLatestLive(symbol, token);
+export const loadFundamentals = (symbol, token, limit) => loadFundamentalsLive(symbol, token, limit);
 
-// Alias exports for backward compatibility
-export { loadNews as loadCompanyNews };
-export { loadDocuments as loadCompanyDocuments };  
-export { loadActions as loadCorporateActions };
+export { loadCompanyOverview, loadCompanyNews, loadCompanyDocuments, loadCorporateActions, loadFinancialStatements, loadSecFilings, loadValuation, __private };
 
-export async function loadValuation(symbol, token) {
-  // Stub implementation for valuation
-  return { symbol, data: null, source: 'stub' };
+export async function loadNews(symbol, token, limit = 12) {
+  return loadCompanyNews(symbol, limit, token);
 }
 
-export async function loadCompanyOverview(symbol, token) {
-  // Stub implementation for company overview  
-  return { symbol, data: null, source: 'stub' };
+export async function loadDocuments(symbol, token, limit = 10) {
+  return loadCompanyDocuments(symbol, limit, token);
 }
 
-// Export mock data for backward compatibility
-export const __private = {
-  // Mock data exports for testing
-};
+export async function loadActions(symbol, token) {
+  return loadCorporateActions(symbol, token);
+}
