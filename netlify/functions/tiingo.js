@@ -1,11 +1,17 @@
 import {
-  loadEod,
-  loadFundamentals,
-  loadNews,
-  loadDocuments,
-  loadActions,
-  loadIntradayLatest,
-} from './tiingo-data.js';
+  loadEod as loadEodLive,
+  loadFundamentals as loadFundamentalsLive,
+  loadCompanyOverview,
+  loadCompanyNews,
+  loadCompanyDocuments,
+  loadCorporateActions,
+  loadIntraday as loadIntradayLive,
+  loadIntradayLatest as loadIntradayLatestLive,
+  loadFinancialStatements,
+  loadSecFilings,
+  loadValuation,
+  __private,
+} from './tiingo-data-backup.js';
 
 const BASE_PRICE_MAP = {
   AAPL: 258.0,
